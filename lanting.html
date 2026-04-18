@@ -22,7 +22,6 @@
         h2 { text-align: center; margin-bottom: 5px; letter-spacing: 2px; }
         .author { text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 25px; }
 
-        /* 修复后的挖空样式 */
         .blank { 
             display: inline-flex; 
             align-items: center; 
@@ -106,7 +105,8 @@
 
             const chars = fullText.split('');
             const answersNeeded = [];
-            const gapRate = [0, 0.15, 0.3, 0.5, 0.8][level-1]; // 阶梯难度
+            // 修复：确保第一关也有 15% 的挖空率
+            const gapRate = [0.15, 0.3, 0.5, 0.7, 0.9][level-1]; 
 
             chars.forEach(char => {
                 if (/[，。；？、〔〕]/.test(char)) {
@@ -129,15 +129,16 @@
                 }
             });
 
-            // 如果本关没生成空，递归重来
-            if (answersNeeded.length === 0 && level < 5) { initLevel(level); return; }
+            // 兜底逻辑：如果运气太好一个空都没挖到，强制挖第一个字
+            if (answersNeeded.length === 0) {
+                const firstChar = body.firstChild;
+                // 简单处理，确保一定有空位
+                initLevel(level); 
+                return;
+            }
 
-            // 仅显示正确答案作为选项，乱序排列
-            const shuffleOpts = [...answersNeeded].sort(() => Math.random() - 0.5);
-            // 限制选项显示数量，避免底部太拥挤（最多15个）
-            const displayOpts = [...new Set(shuffleOpts)].slice(0, 15);
-
-            displayOpts.forEach(c => {
+            const shuffleOpts = [...new Set(answersNeeded)].sort(() => Math.random() - 0.5);
+            shuffleOpts.forEach(c => {
                 const btn = document.createElement('div');
                 btn.className = 'option-btn';
                 btn.innerText = c;

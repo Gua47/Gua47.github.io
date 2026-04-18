@@ -3,61 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>背诵闯关：兰亭集序</title>
+    <title>背诵闯关：兰亭集序全篇</title>
     <style>
         :root { --bg-color: #f4f1e6; --text-color: #333; --primary-color: #6b8e23; --border-color: #c9c4b4; }
         body { background-color: var(--bg-color); color: var(--text-color); font-family: "PingFang SC", "STSong", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        .nav-header { width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        /* 导航与进度 */
+        .nav-header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .back-link { text-decoration: none; color: #666; font-size: 14px; }
-
-        /* 进度条样式 */
-        .progress-container { width: 100%; max-width: 500px; margin-bottom: 30px; position: relative; }
+        .progress-container { width: 100%; max-width: 600px; margin-bottom: 30px; position: relative; }
         .progress-line { height: 2px; background: var(--border-color); position: absolute; top: 15px; width: 100%; z-index: 1; }
         .progress-active { height: 2px; background: var(--primary-color); position: absolute; top: 15px; z-index: 2; transition: width 0.3s; }
         .nodes { display: flex; justify-content: space-between; position: relative; z-index: 3; }
         .node { width: 30px; height: 30px; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999; }
         .node.active { border-color: var(--primary-color); color: var(--primary-color); font-weight: bold; background: #fff; }
 
-        /* 正文区：增加底部内边距 */
-        #game-area { width: 100%; max-width: 500px; line-height: 3; font-size: 1.3rem; text-align: justify; padding-bottom: 200px; }
-        h2 { text-align: center; margin-bottom: 5px; letter-spacing: 2px; }
+        /* 正文区域 - 支持分段 */
+        #game-area { width: 100%; max-width: 600px; padding-bottom: 250px; }
+        #content-body p { line-height: 2.5; font-size: 1.2rem; text-align: justify; text-indent: 2em; margin: 20px 0; }
+        h2 { text-align: center; margin-bottom: 5px; letter-spacing: 4px; }
         .author { text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 25px; }
 
-        /* 挖空样式 */
-        .blank { 
-            display: inline-flex; 
-            align-items: center; 
-            justify-content: center;
-            width: 1.6rem; 
-            height: 1.6rem; 
-            border-bottom: 2px solid #999; 
-            margin: 0 4px; 
-            vertical-align: middle; 
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .blank.active { 
-            border-bottom-color: var(--primary-color); 
-            background-color: rgba(107, 142, 35, 0.1);
-            animation: breathe 1.2s infinite;
-        }
+        /* 挖空与交互 */
+        .blank { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-bottom: 2px solid #999; margin: 0 2px; vertical-align: middle; cursor: pointer; text-indent: 0; }
+        .blank.active { border-bottom-color: var(--primary-color); background-color: rgba(107, 142, 35, 0.1); animation: breathe 1.2s infinite; }
         @keyframes breathe { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
         .blank.filled { border-bottom: none; color: var(--primary-color); font-weight: bold; width: auto; min-width: 1.2rem; }
         .blank.wrong { background: #f2dede; border-bottom-color: #d9534f; }
 
-        /* 选项区：固定高度，仅显示5个 */
-        #options-container { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; padding: 25px 0; border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 15px; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
-        .option-btn { width: 55px; height: 55px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; background: #fff; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
-        .option-btn:active { background-color: #f0f0f0; transform: scale(0.95); }
+        /* 底部选项卡 */
+        #options-container { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; padding: 20px 0; border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 12px; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+        .option-btn { width: 50px; height: 50px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; background: #fff; border-radius: 6px; cursor: pointer; }
+
+        /* 成功提示页面（全屏遮罩） */
+        #success-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 241, 230, 0.98); z-index: 200; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #success-page h1 { font-size: 1.8rem; color: var(--primary-color); margin-bottom: 20px; }
+        .next-btn { padding: 15px 40px; background: var(--primary-color); color: #fff; border: none; border-radius: 30px; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 10px rgba(107, 142, 35, 0.3); }
 
         /* 默写模式 */
-        #input-mode { display: none; width: 100%; max-width: 500px; }
-        #text-input { width: 100%; height: 220px; padding: 15px; font-size: 1.1rem; border: 1px solid var(--border-color); border-radius: 8px; line-height: 1.8; box-sizing: border-box; }
-        .submit-btn { width: 100%; margin-top: 15px; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1.1rem; }
+        #input-mode { display: none; width: 100%; max-width: 600px; }
+        #text-input { width: 100%; height: 300px; padding: 15px; font-size: 1rem; border: 1px solid var(--border-color); border-radius: 8px; line-height: 1.8; box-sizing: border-box; background: #fff; }
     </style>
 </head>
 <body>
+    <div id="success-page">
+        <h1>恭喜你完成了一次背诵🎉</h1>
+        <p style="margin-bottom: 30px; color: #666;">百尺竿头，更进一步</p>
+        <button class="next-btn" onclick="closeSuccessPage()">进入下一关</button>
+    </div>
+
     <div class="nav-header">
         <a href="index.html" class="back-link">← 目录</a>
         <span id="level-title" style="font-size: 14px; color: #888;">正在练习：第一关</span>
@@ -83,15 +77,18 @@
 
     <div id="options-container"></div>
     <div id="input-mode">
-        <textarea id="text-input" placeholder="请凭记忆默写原文内容..."></textarea>
-        <button class="submit-btn" onclick="checkFinal()">提交校验</button>
+        <textarea id="text-input" placeholder="请在此处默写全文..."></textarea>
+        <button class="next-btn" style="margin-top:20px; width:100%; border-radius:8px;" onclick="checkFinal()">提交全文核对</button>
     </div>
 
     <script>
-        const fullText = "永和九年，岁在癸丑，暮春之初，会于会稽山阴之兰亭，修禊事也。群贤毕至，少长咸集。此地有崇山峻岭，茂林修竹；又有清流激湍，映带左右，引以为流觞曲水，列坐其次。虽无丝竹管弦之盛，一觞一咏，亦足以畅叙幽情。";
-        // 提取原文所有汉字作为干扰项池
-        const charPool = [...new Set(fullText.replace(/[，。；？、〔〕\s]/g, "").split(''))];
-        
+        // 包含分段的完整文本
+        const rawFullText = `永和九年，岁在癸丑，暮春之初，会于会稽山阴之兰亭，修禊事也。群贤毕至，少长咸集。此地有崇山峻岭，茂林修竹；又有清流激湍，映带左右，引以为流觞曲水，列坐其次。虽无丝竹管弦之盛，一觞一咏，亦足以畅叙幽情。
+是日也，天朗气清，惠风和畅。仰观宇宙之大，俯察品类之盛，所以游目骋怀，足以极视听之娱，信可乐也。
+夫人之相与，俯仰一世，或取诸怀抱，悟言一室之内；或因寄所托，放浪形骸之外。虽趣舍万殊，静躁不同，当其欣于所遇，暂得于己，快然自足，不知老之将至。及其所之既倦，情随事迁，感慨系之矣。向之所欣，俯仰之间，已为陈迹，犹不能不以之兴怀。况修短随化，终期于尽。古人云：“死生亦大矣。”岂不痛哉！
+每览昔人兴感之由，若合一契，未尝不临文嗟悼，不能喻之于怀。固知一死生为虚诞，齐彭殇为妄作。后之视今，亦犹今之视昔，悲夫！故列叙时人，录其所述，虽世殊事异，所以兴怀，其致一也。后之览者，亦将有感于斯文。`;
+
+        const charPool = [...new Set(rawFullText.replace(/[，。；？、〔〕“”\s]/g, "").split(''))];
         let currentLevel = 1;
         let allBlanks = [];
         let activeIndex = 0;
@@ -101,16 +98,14 @@
             const opts = document.getElementById('options-container');
             const inp = document.getElementById('input-mode');
             body.innerHTML = '';
-            opts.innerHTML = '';
             allBlanks = [];
             activeIndex = 0;
-            
+
             document.getElementById('level-title').innerText = level === 5 ? "终极测评" : `正在练习：第${level}关`;
             document.querySelectorAll('.node').forEach((n, i) => n.classList.toggle('active', i < level));
             document.getElementById('progress-active').style.width = (level - 1) * 25 + '%';
 
             if (level === 5) {
-                body.innerHTML = "<p style='text-align:center; color:#999;'>终极默写挑战</p>";
                 opts.style.display = 'none';
                 inp.style.display = 'block';
                 return;
@@ -119,43 +114,41 @@
             opts.style.display = 'flex';
             inp.style.display = 'none';
 
-            const chars = fullText.split('');
-            const gapRates = [0.15, 0.35, 0.6, 0.85];
-            const rate = gapRates[level-1];
+            // 处理分段渲染
+            const paragraphs = rawFullText.split('\n');
+            const gapRate = [0.1, 0.25, 0.45, 0.7][level-1];
 
-            chars.forEach(char => {
-                if (/[，。；？、〔〕]/.test(char)) {
-                    body.appendChild(document.createTextNode(char));
-                } else {
-                    if (Math.random() < rate) {
-                        const span = document.createElement('span');
-                        span.className = 'blank';
-                        span.dataset.ans = char;
-                        body.appendChild(span);
-                        allBlanks.push(span);
+            paragraphs.forEach(para => {
+                const p = document.createElement('p');
+                const chars = para.split('');
+                chars.forEach(char => {
+                    if (/[，。；？、〔〕“”\s]/.test(char)) {
+                        p.appendChild(document.createTextNode(char));
                     } else {
-                        body.appendChild(document.createTextNode(char));
+                        if (Math.random() < gapRate) {
+                            const span = document.createElement('span');
+                            span.className = 'blank';
+                            span.dataset.ans = char;
+                            p.appendChild(span);
+                            allBlanks.push(span);
+                        } else {
+                            p.appendChild(document.createTextNode(char));
+                        }
                     }
-                }
+                });
+                body.appendChild(p);
             });
 
             if (allBlanks.length === 0) { initLevel(level); return; }
-            
             refreshUI();
         }
 
-        // 刷新当前激活的空位和下方的选项
         function refreshUI() {
             if (activeIndex >= allBlanks.length) {
-                setTimeout(() => {
-                    alert("关卡圆满完成！");
-                    currentLevel++;
-                    initLevel(currentLevel);
-                }, 400);
+                document.getElementById('success-page').style.display = 'flex';
                 return;
             }
 
-            // 1. 更新空位状态
             allBlanks.forEach((b, i) => {
                 b.classList.remove('active');
                 if (i === activeIndex) {
@@ -164,16 +157,10 @@
                 }
             });
 
-            // 2. 生成5个选项（1正+4误）
             const correctChar = allBlanks[activeIndex].dataset.ans;
             const options = [correctChar];
-            
-            // 从字池里挑4个不同的字作为干扰
-            const others = charPool.filter(c => c !== correctChar);
-            const distractors = others.sort(() => Math.random() - 0.5).slice(0, 4);
-            options.push(...distractors);
-            
-            // 乱序排列选项
+            const others = charPool.filter(c => c !== correctChar).sort(() => Math.random() - 0.5).slice(0, 4);
+            options.push(...others);
             options.sort(() => Math.random() - 0.5);
 
             const optsContainer = document.getElementById('options-container');
@@ -187,7 +174,7 @@
                         allBlanks[activeIndex].innerText = char;
                         allBlanks[activeIndex].className = 'blank filled';
                         activeIndex++;
-                        refreshUI(); // 填对后立刻刷新
+                        refreshUI();
                     } else {
                         allBlanks[activeIndex].classList.add('wrong');
                         setTimeout(() => allBlanks[activeIndex].classList.remove('wrong'), 400);
@@ -197,11 +184,22 @@
             });
         }
 
+        function closeSuccessPage() {
+            document.getElementById('success-page').style.display = 'none';
+            currentLevel++;
+            initLevel(currentLevel);
+        }
+
         function checkFinal() {
-            const val = document.getElementById('text-input').value.replace(/\s+/g, "");
-            const target = fullText.replace(/\s+/g, "");
-            if (val === target) alert("完美通过！");
-            else alert("还需检查标点或文字准确度。");
+            const val = document.getElementById('text-input').value.replace(/[，。；？、〔〕“”\s]/g, "");
+            const target = rawFullText.replace(/[，。；？、〔〕“”\s]/g, "");
+            if (val === target) {
+                document.getElementById('success-page').querySelector('p').innerText = "你已完美掌握全篇《兰亭集序》！";
+                document.getElementById('success-page').style.display = 'flex';
+                document.getElementById('success-page').querySelector('button').style.display = 'none';
+            } else {
+                alert("文字或排序还有小瑕疵，请对照原文再检查一下吧。");
+            }
         }
 
         initLevel(1);

@@ -18,31 +18,51 @@
         .node { width: 30px; height: 30px; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999; }
         .node.active { border-color: var(--primary-color); color: var(--primary-color); font-weight: bold; background: #fff; }
 
-        #game-area { width: 100%; max-width: 500px; line-height: 2.8; font-size: 1.2rem; text-align: justify; margin-bottom: 150px; }
+        /* 正文区：增加底部内边距防止遮挡 */
+        #game-area { width: 100%; max-width: 500px; line-height: 2.8; font-size: 1.25rem; text-align: justify; padding-bottom: 250px; }
         h2 { text-align: center; margin-bottom: 5px; letter-spacing: 2px; }
         .author { text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 25px; }
 
+        /* 挖空样式 */
         .blank { 
             display: inline-flex; 
             align-items: center; 
             justify-content: center;
-            width: 1.5rem; 
-            height: 1.5rem; 
+            width: 1.6rem; 
+            height: 1.6rem; 
             border-bottom: 2px solid #999; 
             margin: 0 4px; 
             vertical-align: middle; 
             cursor: pointer;
             transition: all 0.2s;
         }
-        .blank.selected { border-bottom-color: var(--primary-color); background-color: rgba(107, 142, 35, 0.1); }
+        /* 当前正在填写的空位：呼吸灯特效 */
+        .blank.active { 
+            border-bottom-color: var(--primary-color); 
+            background-color: rgba(107, 142, 35, 0.15);
+            animation: breathe 1.5s infinite ease-in-out;
+        }
+        @keyframes breathe {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
         .blank.filled { border-bottom: none; color: var(--primary-color); font-weight: bold; width: auto; min-width: 1.2rem; }
-        .blank.wrong { background: #f2dede; border-bottom-color: #d9534f; }
+        .blank.wrong { background: #f2dede; border-bottom-color: #d9534f; animation: shake 0.3s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
 
-        #options-container { position: fixed; bottom: 0; left: 0; width: 100%; background: #fdfcf8; padding: 20px 0; border-top: 1px solid var(--border-color); display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
-        .option-btn { width: 45px; height: 45px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: #fff; border-radius: 4px; cursor: pointer; }
+        /* 选项区 */
+        #options-container { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(253, 252, 248, 0.95); padding: 15px 0; border-top: 1px solid var(--border-color); display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.08); max-height: 40vh; overflow-y: auto; }
+        .option-btn { width: 42px; height: 42px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: #fff; border-radius: 4px; cursor: pointer; user-select: none; }
+        /* 选对后消失的动画 */
+        .option-btn.fade-out { opacity: 0; transform: scale(0.5); pointer-events: none; transition: all 0.3s; }
 
         #input-mode { display: none; width: 100%; max-width: 500px; }
-        #text-input { width: 100%; height: 200px; padding: 15px; font-size: 1.1rem; border: 1px solid var(--border-color); border-radius: 8px; line-height: 1.8; box-sizing: border-box; }
+        #text-input { width: 100%; height: 220px; padding: 15px; font-size: 1.1rem; border: 1px solid var(--border-color); border-radius: 8px; line-height: 1.8; box-sizing: border-box; }
         .submit-btn { width: 100%; margin-top: 15px; padding: 12px; background: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1rem; }
     </style>
 </head>
@@ -54,7 +74,7 @@
 
     <div class="progress-container">
         <div class="progress-line"></div>
-        <div id="progress-active" class="progress-active" style="width: 0%;"></div>
+        <div id="progress-active" class="progress-active"></div>
         <div class="nodes">
             <div class="node active">1</div>
             <div class="node">2</div>
@@ -79,7 +99,8 @@
     <script>
         const fullText = "永和九年，岁在癸丑，暮春之初，会于会稽山阴之兰亭，修禊事也。群贤毕至，少长咸集。此地有崇山峻岭，茂林修竹；又有清流激湍，映带左右，引以为流觞曲水，列坐其次。虽无丝竹管弦之盛，一觞一咏，亦足以畅叙幽情。";
         let currentLevel = 1;
-        let selectedBlank = null;
+        let allBlanks = [];
+        let activeBlankIndex = 0;
 
         function initLevel(level) {
             const body = document.getElementById('content-body');
@@ -87,9 +108,10 @@
             const inp = document.getElementById('input-mode');
             body.innerHTML = '';
             opts.innerHTML = '';
-            selectedBlank = null;
+            allBlanks = [];
+            activeBlankIndex = 0;
+            
             document.getElementById('level-title').innerText = level === 5 ? "终极测评" : `正在练习：第${level}关`;
-
             document.querySelectorAll('.node').forEach((n, i) => n.classList.toggle('active', i < level));
             document.getElementById('progress-active').style.width = (level - 1) * 25 + '%';
 
@@ -104,67 +126,79 @@
             inp.style.display = 'none';
 
             const chars = fullText.split('');
-            const answersNeeded = [];
-            // 修复：确保第一关也有 15% 的挖空率
-            const gapRate = [0.15, 0.3, 0.5, 0.7, 0.9][level-1]; 
+            const gapRates = [0.15, 0.35, 0.6, 0.85];
+            const rate = gapRates[level-1];
 
+            // 生成文本和空位
             chars.forEach(char => {
                 if (/[，。；？、〔〕]/.test(char)) {
                     body.appendChild(document.createTextNode(char));
                 } else {
-                    if (Math.random() < gapRate) {
+                    if (Math.random() < rate) {
                         const span = document.createElement('span');
                         span.className = 'blank';
                         span.dataset.ans = char;
-                        span.onclick = () => {
-                            document.querySelectorAll('.blank').forEach(b => b.classList.remove('selected'));
-                            span.classList.add('selected');
-                            selectedBlank = span;
-                        };
                         body.appendChild(span);
-                        answersNeeded.push(char);
+                        allBlanks.push(span);
                     } else {
                         body.appendChild(document.createTextNode(char));
                     }
                 }
             });
 
-            // 兜底逻辑：如果运气太好一个空都没挖到，强制挖第一个字
-            if (answersNeeded.length === 0) {
-                const firstChar = body.firstChild;
-                // 简单处理，确保一定有空位
-                initLevel(level); 
-                return;
-            }
+            if (allBlanks.length === 0) { initLevel(level); return; }
 
-            const shuffleOpts = [...new Set(answersNeeded)].sort(() => Math.random() - 0.5);
-            shuffleOpts.forEach(c => {
+            // 初始聚焦第一个空
+            updateActiveBlank();
+
+            // 生成选项（仅显示答案，选对消失）
+            const answers = allBlanks.map(b => b.dataset.ans);
+            const shuffleAnswers = answers.sort(() => Math.random() - 0.5);
+            
+            shuffleAnswers.forEach((char, index) => {
                 const btn = document.createElement('div');
                 btn.className = 'option-btn';
-                btn.innerText = c;
-                btn.onclick = () => {
-                    if (!selectedBlank) return;
-                    if (c === selectedBlank.dataset.ans) {
-                        selectedBlank.innerText = c;
-                        selectedBlank.className = 'blank filled';
-                        selectedBlank = null;
-                        checkFinish();
-                    } else {
-                        selectedBlank.classList.add('wrong');
-                        setTimeout(() => selectedBlank.classList.remove('wrong'), 400);
-                    }
-                };
+                btn.innerText = char;
+                btn.onclick = () => handleOptionClick(char, btn);
                 opts.appendChild(btn);
             });
         }
 
-        function checkFinish() {
-            if ([...document.querySelectorAll('.blank')].every(b => b.innerText !== '')) {
-                setTimeout(() => {
-                    alert("本关圆满完成！");
-                    currentLevel++;
-                    initLevel(currentLevel);
-                }, 400);
+        function updateActiveBlank() {
+            allBlanks.forEach(b => b.classList.remove('active'));
+            if (activeBlankIndex < allBlanks.length) {
+                const current = allBlanks[activeBlankIndex];
+                current.classList.add('active');
+                // 自动滚动，确保当前空位在视野内
+                current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function handleOptionClick(char, btn) {
+            if (activeBlankIndex >= allBlanks.length) return;
+
+            const targetBlank = allBlanks[activeBlankIndex];
+            if (char === targetBlank.dataset.ans) {
+                // 选对了
+                targetBlank.innerText = char;
+                targetBlank.className = 'blank filled';
+                btn.classList.add('fade-out'); // 按钮消失
+                setTimeout(() => btn.remove(), 300);
+
+                activeBlankIndex++;
+                if (activeBlankIndex < allBlanks.length) {
+                    updateActiveBlank(); // 自动跳转下一个
+                } else {
+                    setTimeout(() => {
+                        alert("本关圆满完成！即将进入下一难度。");
+                        currentLevel++;
+                        initLevel(currentLevel);
+                    }, 500);
+                }
+            } else {
+                // 选错了
+                targetBlank.classList.add('wrong');
+                setTimeout(() => targetBlank.classList.remove('wrong'), 400);
             }
         }
 
@@ -172,7 +206,7 @@
             const val = document.getElementById('text-input').value.replace(/\s+/g, "");
             const target = fullText.replace(/\s+/g, "");
             if (val === target) alert("完璧归赵！全文背诵成功！");
-            else alert("还有些出入，再检查一下标点或汉字。");
+            else alert("内容似乎还有点不准确，请再检查一下。");
         }
 
         initLevel(1);

@@ -5,254 +5,219 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>背诵闯关：兰亭集序专业版</title>
     <style>
-        :root { --bg-color: #f4f1e6; --text-color: #333; --primary-color: #6b8e23; --error-color: #d9534f; --border-color: #c9c4b4; }
-        body { background-color: var(--bg-color); color: var(--text-color); font-family: "PingFang SC", "STSong", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        :root { --bg-color: #f4f1e6; --text-color: #333; --primary-color: #6b8e23; --border-color: #c9c4b4; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: "PingFang SC", "楷体", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
+        /* 顶部信息 */
+        .nav-header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .back-link { text-decoration: none; color: #888; font-size: 14px; }
+        .level-hint { color: var(--primary-color); font-weight: bold; font-size: 16px; }
+
         /* 进度条 */
-        .progress-container { width: 100%; max-width: 600px; margin-bottom: 20px; position: relative; }
+        .progress-container { width: 100%; max-width: 500px; margin-bottom: 30px; position: relative; }
         .progress-line { height: 2px; background: var(--border-color); position: absolute; top: 15px; width: 100%; z-index: 1; }
         .progress-active { height: 2px; background: var(--primary-color); position: absolute; top: 15px; z-index: 2; transition: width 0.3s; }
         .nodes { display: flex; justify-content: space-between; position: relative; z-index: 3; }
-        .node { width: 30px; height: 30px; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #999; }
-        .node.active { border-color: var(--primary-color); color: var(--primary-color); font-weight: bold; background: #fff; }
+        .node { width: 30px; height: 30px; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999; transition: all 0.3s; }
+        .node.active { border-color: var(--primary-color); color: var(--primary-color); font-weight: bold; background: #fff; transform: scale(1.1); }
 
-        /* 内容区 */
-        #game-area { width: 100%; max-width: 600px; padding-bottom: 220px; }
-        #content-body p { line-height: 2.5; font-size: 1.25rem; text-indent: 2em; margin: 15px 0; }
-        .blank { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-bottom: 2px solid #999; margin: 0 2px; vertical-align: middle; }
-        .blank.active { border-bottom-color: var(--primary-color); background: rgba(107, 142, 35, 0.1); animation: breathe 1.2s infinite; }
-        .blank.filled { border-bottom: none; color: var(--primary-color); font-weight: bold; }
-        
-        /* 错误比对高亮 */
-        .char-correct { color: #666; }
-        .char-error { color: var(--error-color); font-weight: bold; text-decoration: underline; background: #ffebeb; }
-        .char-missing { color: #aaa; text-decoration: line-through; }
+        /* 正文区：修复重叠的关键 */
+        #game-area { width: 100%; max-width: 600px; line-height: 3.2; font-size: 1.3rem; text-align: justify; padding-bottom: 280px; }
+        h2 { text-align: center; margin-bottom: 10px; letter-spacing: 4px; color: #222; }
+        .author { text-align: center; color: #777; font-size: 1rem; margin-bottom: 30px; }
 
-        /* 选项与输入 */
-        #options-container { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; padding: 15px 0; border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 10px; z-index: 100; flex-wrap: wrap; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
-        .option-btn { width: 45px; height: 45px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; background: #fff; border-radius: 6px; }
+        /* 挖空样式修复 */
+        .blank { 
+            display: inline-block; 
+            width: 1.4em;             /* 固定宽度，确保不重叠 */
+            height: 1.4em;
+            border-bottom: 2px solid #999; 
+            margin: 0 2px; 
+            vertical-align: middle; 
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+        }
+        /* 当前正在填写的空位：提示色 */
+        .blank.active { 
+            border-bottom: 3px solid var(--primary-color); 
+            background-color: rgba(107, 142, 35, 0.1);
+        }
+        /* 填入后的文字：确保不和下划线重叠 */
+        .blank.filled { 
+            border-bottom: 1px solid #ddd; /* 填入后下划线变淡 */
+            color: var(--primary-color); 
+            font-weight: bold; 
+            background: none;
+        }
+        .blank.wrong { background: #f2dede; border-bottom-color: #d9534f; animation: shake 0.3s; }
 
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+
+        /* 底部选项卡 */
+        #options-container { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(253, 252, 248, 0.98); padding: 20px 0; border-top: 1px solid var(--border-color); display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; z-index: 100; box-shadow: 0 -8px 20px rgba(0,0,0,0.1); max-height: 35vh; overflow-y: auto; }
+        .option-btn { width: 48px; height: 48px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; background: #fff; border-radius: 6px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .option-btn:active { background: #eee; transform: scale(0.9); }
+        .option-btn.fade-out { opacity: 0; transform: translateY(10px); pointer-events: none; }
+
+        /* 默写模式 */
         #input-mode { display: none; width: 100%; max-width: 600px; }
-        #text-input { width: 100%; height: 250px; padding: 15px; font-size: 1.1rem; border: 1px solid var(--border-color); border-radius: 8px; line-height: 1.8; box-sizing: border-box; }
-        #diff-result { display: none; background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; margin-top: 10px; line-height: 2; }
-
-        /* 覆盖层 */
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 241, 230, 0.98); z-index: 200; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; }
-        .btn-main { width: 100%; padding: 15px; background: var(--primary-color); color: #fff; border: none; border-radius: 8px; font-size: 1.1rem; margin-top: 10px; cursor: pointer; }
-
-        @keyframes breathe { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        #text-input { width: 100%; height: 250px; padding: 15px; font-size: 1.2rem; border: 1px solid var(--border-color); border-radius: 8px; line-height: 1.8; background: #fdfcf8; box-sizing: border-box; }
+        .submit-btn { width: 100%; margin-top: 15px; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; }
     </style>
 </head>
 <body>
-
-    <div id="choice-overlay" class="overlay">
-        <div class="card">
-            <h2>完成阶段挑战！🎉</h2>
-            <p>请选择接下来的挑战方式：</p>
-            <button class="btn-main" onclick="startLevel(5)">方式A：语音默写/分段背诵</button>
-            <button class="btn-main" style="background:#5a7d9a" onclick="startLevel(6)">方式B：全文终极挑战</button>
-        </div>
-    </div>
-
-    <div id="info-overlay" class="overlay">
-        <div class="card">
-            <h2>全篇通关！</h2>
-            <input type="text" id="u-class" placeholder="班级" style="width:100%; padding:10px; margin:5px 0;">
-            <input type="text" id="u-name" placeholder="姓名" style="width:100%; padding:10px; margin:5px 0;">
-            <button class="btn-main" onclick="showCert()">生成专属成就卡</button>
-        </div>
-    </div>
-
-    <div id="cert-overlay" class="overlay" style="background: #e9e5d8;">
-        <div id="certificate" class="card" style="border: 6px double var(--primary-color);">
-            <h2 style="color:var(--primary-color)">背诵成就档案</h2>
-            <p style="text-align:left;"><b><span id="c-info"></span></b> 同学：</p>
-            <p style="text-align:left; text-indent:2em; font-size:0.9rem;">你在《兰亭集序》挑战中表现优异。系统已自动记录本次学习数据以供教学分析。</p>
-            <div id="error-stats-display" style="text-align:left; font-size:0.85rem; background:#f9f9f9; padding:10px; border-radius:5px; margin:10px 0;">
-                <b>🔍 易错字词记录：</b><br><span id="error-list">无</span>
-            </div>
-            <p style="text-align:right; font-size:0.8rem; color:#999;">认证时间：<span id="c-date"></span></p>
-            <div style="font-weight:bold; color:var(--error-color); margin-top:10px;">请截图发给老师核验</div>
-        </div>
-        <button class="btn-main" style="max-width:450px; background:#666;" onclick="location.reload()">回目录</button>
-    </div>
-
     <div class="nav-header">
-        <span id="level-title" style="font-weight:bold; color:var(--primary-color);">准备开始</span>
+        <a href="index.html" class="back-link">← 目录</a>
+        <div id="level-title" class="level-hint">第1关挑战中</div>
     </div>
 
     <div class="progress-container">
         <div class="progress-line"></div>
         <div id="progress-active" class="progress-active"></div>
-        <div class="nodes" id="node-list">
-            <div class="node">1</div><div class="node">2</div><div class="node">3</div>
-            <div class="node">4</div><div class="node">5</div><div class="node">6</div>
+        <div class="nodes">
+            <div class="node active">1</div>
+            <div class="node">2</div>
+            <div class="node">3</div>
+            <div class="node">4</div>
+            <div class="node">5</div>
+            <div class="node">测</div>
         </div>
     </div>
 
     <div id="game-area">
-        <h2 id="main-title">兰亭集序</h2>
+        <h2>兰亭集序</h2>
+        <div class="author">王羲之 〔魏晋〕</div>
         <div id="content-body"></div>
     </div>
 
     <div id="options-container"></div>
-
     <div id="input-mode">
-        <div style="background:#fff3cd; padding:10px; font-size:0.85rem; border-radius:5px; margin-bottom:10px;">
-            🎤 提示：点击键盘上的<b>“麦克风”</b>图标即可开始语音背诵。完成后点击核对。
-        </div>
-        <textarea id="text-input" placeholder="请开始你的表演..."></textarea>
-        <div id="diff-result"></div>
-        <button id="check-btn" class="btn-main" onclick="compareText()">提交核对差异</button>
-        <button id="final-submit" class="btn-main" style="display:none; background:#28a745;" onclick="finishAll()">确认完成并提交数据</button>
+        <textarea id="text-input" placeholder="请默写全文内容..."></textarea>
+        <button class="submit-btn" onclick="checkFinal()">提交校验</button>
     </div>
 
     <script>
-        const rawText = `永和九年，岁在癸丑，暮春之初，会于会稽山阴之兰亭，修禊事也。群贤毕至，少长咸集。此地有崇山峻岭，茂林修竹；又有清流激湍，映带左右，引以为流觞曲水，列坐其次。虽无丝竹管弦之盛，一觞一咏，亦足以畅叙幽情。
-是日也，天朗气清，惠风和畅。仰观宇宙之大，俯察品类之盛，所以游目骋怀，足以极视听之娱，信可乐也。
-夫人之相与，俯仰一世，或取诸怀抱，悟言一室之内；或因寄所托，放浪形骸之外。虽趣舍万殊，静躁不同，当其欣于所遇，暂得于己，快然自足，不知老之将至。及其所之既倦，情随事迁，感慨系之矣。向之所欣，俯仰之间，已为陈迹，犹不能不以之兴怀。况修短随化，终期于尽。古人云：“死生亦大矣。”岂不痛哉！
-每览昔人兴感之由，若合一契，未尝不临文嗟悼，不能喻之于怀。固知一死生为虚诞，齐彭殇为妄作。后之视今，亦犹今之视昔，悲夫！故列叙时人，录其所述，虽世殊事异，所以兴怀，其致一也。后之览者，亦将有感于斯文。`;
-
-        const charPool = [...new Set(rawText.replace(/[，。；？、〔〕“”\s]/g, "").split(''))];
+        // 扩展了正文内容以匹配图中显示
+        const fullText = "永和九年，岁在癸丑，暮春之初，会于会稽山阴之兰亭，修禊事也。群贤毕至，少长咸集。此地有崇山峻岭，茂林修竹；又有清流激湍，映带左右，引以为流觞曲水，列坐其次。虽无丝竹管弦之盛，一觞一咏，亦足以畅叙幽情。是日也，天朗气清，惠风和畅。仰观宇宙之大，俯察品类之盛，所以游目骋怀，足以极视听之娱，信可乐也。";
+        
         let currentLevel = 1;
         let allBlanks = [];
-        let activeIndex = 0;
-        let errorData = {}; // 任务1：后台统计对象
-
-        function startLevel(l) {
-            currentLevel = l;
-            document.getElementById('choice-overlay').style.display = 'none';
-            initLevel(l);
-        }
+        let activeBlankIndex = 0;
 
         function initLevel(level) {
             const body = document.getElementById('content-body');
             const opts = document.getElementById('options-container');
             const inp = document.getElementById('input-mode');
-            body.innerHTML = ''; opts.innerHTML = ''; allBlanks = []; activeIndex = 0;
+            body.innerHTML = '';
+            opts.innerHTML = '';
+            allBlanks = [];
+            activeBlankIndex = 0;
             
+            document.getElementById('level-title').innerText = level === 6 ? "终极默写挑战" : `第${level}关挑战中`;
             document.querySelectorAll('.node').forEach((n, i) => n.classList.toggle('active', i < level));
             document.getElementById('progress-active').style.width = (level - 1) * 20 + '%';
-            document.getElementById('level-title').innerText = `第${level}关挑战中`;
 
-            if (level >= 5) {
-                opts.style.display = 'none'; inp.style.display = 'block';
-                body.innerHTML = "<p style='color:#999; text-align:center;'>请根据记忆完成默写/语音输入</p>";
+            if (level === 6) {
+                body.innerHTML = "<p style='text-align:center; color:#999; font-size:1.1rem;'>请在下方文本框内默写全文</p>";
+                opts.style.display = 'none';
+                inp.style.display = 'block';
                 return;
             }
 
-            opts.style.display = 'flex'; inp.style.display = 'none';
-            const rate = [0.1, 0.3, 0.6, 1.0][level-1];
+            opts.style.display = 'flex';
+            inp.style.display = 'none';
 
-            rawText.split('\n').forEach(para => {
-                const p = document.createElement('p');
-                para.split('').forEach(char => {
-                    if (/[，。；？、〔〕“”\s]/.test(char)) {
-                        p.appendChild(document.createTextNode(char));
-                    } else if (Math.random() < rate || level === 4) {
+            const chars = fullText.split('');
+            // 难度曲线：20%, 40%, 60%, 80%, 95%
+            const rates = [0.2, 0.4, 0.6, 0.8, 0.95];
+            const rate = rates[level-1];
+
+            chars.forEach(char => {
+                if (/[，。；？、〔〕]/.test(char)) {
+                    body.appendChild(document.createTextNode(char));
+                } else {
+                    if (Math.random() < rate) {
                         const span = document.createElement('span');
                         span.className = 'blank';
                         span.dataset.ans = char;
-                        p.appendChild(span);
+                        body.appendChild(span);
                         allBlanks.push(span);
                     } else {
-                        p.appendChild(document.createTextNode(char));
+                        body.appendChild(document.createTextNode(char));
                     }
-                });
-                body.appendChild(p);
-            });
-            refreshUI();
-        }
-
-        function refreshUI() {
-            if (activeIndex >= allBlanks.length) {
-                if (currentLevel === 4) {
-                    document.getElementById('choice-overlay').style.display = 'flex';
-                } else {
-                    alert("千里之行始于足下，还有最后一关哦");
-                    startLevel(currentLevel + 1);
                 }
-                return;
-            }
-            allBlanks.forEach((b, i) => b.classList.toggle('active', i === activeIndex));
-            const correct = allBlanks[activeIndex].dataset.ans;
-            const options = [correct, ...charPool.filter(c => c !== correct).sort(() => Math.random() - 0.5).slice(0, 4)].sort(() => Math.random() - 0.5);
+            });
+
+            if (allBlanks.length === 0) { initLevel(level); return; }
+
+            updateActiveBlank();
+
+            // 生成选项（仅显示答案，打乱顺序）
+            const answers = allBlanks.map(b => b.dataset.ans);
+            const shuffleAnswers = [...new Set(answers)].sort(() => Math.random() - 0.5);
             
-            const container = document.getElementById('options-container');
-            container.innerHTML = '';
-            options.forEach(c => {
+            shuffleAnswers.forEach(char => {
                 const btn = document.createElement('div');
-                btn.className = 'option-btn'; btn.innerText = c;
-                btn.onclick = () => {
-                    if (c === correct) {
-                        allBlanks[activeIndex].innerText = c;
-                        allBlanks[activeIndex].className = 'blank filled';
-                        activeIndex++; refreshUI();
-                    } else {
-                        // 任务1：记录易错点
-                        errorData[correct] = (errorData[correct] || 0) + 1;
-                        allBlanks[activeIndex].style.background = '#f2dede';
-                        setTimeout(() => allBlanks[activeIndex-1 < activeIndex ? activeIndex : activeIndex].style.background = '', 400);
-                    }
-                };
-                container.appendChild(btn);
+                btn.className = 'option-btn';
+                btn.innerText = char;
+                btn.onclick = () => handleOptionClick(char, btn);
+                opts.appendChild(btn);
             });
         }
 
-        // 任务3：精准纠错比对
-        function compareText() {
-            const input = document.getElementById('text-input').value.trim();
-            const target = rawText.replace(/\s+/g, "");
-            const normalizedInput = input.replace(/\s+/g, "");
-            
-            let resultHTML = "";
-            let i = 0, j = 0;
-            const targetChars = target.split('');
-            const inputChars = normalizedInput.split('');
-
-            while (i < targetChars.length || j < inputChars.length) {
-                if (targetChars[i] === inputChars[j]) {
-                    resultHTML += `<span class="char-correct">${targetChars[i]}</span>`;
-                    i++; j++;
-                } else if (j >= inputChars.length) {
-                    resultHTML += `<span class="char-missing">${targetChars[i]}</span>`;
-                    i++;
-                } else {
-                    resultHTML += `<span class="char-error">${inputChars[j]}</span>`;
-                    errorData[targetChars[i]] = (errorData[targetChars[i]] || 0) + 1;
-                    j++; // 移动输入指针尝试匹配下一个
-                }
+        function updateActiveBlank() {
+            allBlanks.forEach(b => b.classList.remove('active'));
+            if (activeBlankIndex < allBlanks.length) {
+                const current = allBlanks[activeBlankIndex];
+                current.classList.add('active');
+                // 确保当前填写的空位可见
+                current.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-            
-            const resDiv = document.getElementById('diff-result');
-            resDiv.innerHTML = "<b>差异比对结果（红色为错字）：</b><br>" + resultHTML;
-            resDiv.style.display = 'block';
-            document.getElementById('final-submit').style.display = 'block';
-            document.getElementById('check-btn').innerText = "重新检查";
         }
 
-        function finishAll() {
-            document.getElementById('info-overlay').style.display = 'flex';
+        function handleOptionClick(char, btn) {
+            if (activeBlankIndex >= allBlanks.length) return;
+
+            const targetBlank = allBlanks[activeBlankIndex];
+            if (char === targetBlank.dataset.ans) {
+                // 正确
+                targetBlank.innerText = char;
+                targetBlank.className = 'blank filled';
+                
+                // 检查该字符是否还在剩余的空位中出现，如果不出现了，才让按钮消失
+                const remainingAnswers = allBlanks.slice(activeBlankIndex + 1).map(b => b.dataset.ans);
+                if (!remainingAnswers.includes(char)) {
+                    btn.classList.add('fade-out');
+                    setTimeout(() => btn.remove(), 200);
+                }
+
+                activeBlankIndex++;
+                if (activeBlankIndex < allBlanks.length) {
+                    updateActiveBlank(); // 自动移向下一个
+                } else {
+                    setTimeout(() => {
+                        alert("精诚所至！本关通过。");
+                        currentLevel++;
+                        initLevel(currentLevel);
+                    }, 400);
+                }
+            } else {
+                // 错误
+                targetBlank.classList.add('wrong');
+                setTimeout(() => targetBlank.classList.remove('wrong'), 400);
+            }
         }
 
-        function showCert() {
-            const uClass = document.getElementById('u-class').value;
-            const uName = document.getElementById('u-name').value;
-            if (!uClass || !uName) return alert("请完整填写信息");
-            
-            document.getElementById('info-overlay').style.display = 'none';
-            document.getElementById('c-info').innerText = `${uClass} ${uName}`;
-            document.getElementById('c-date').innerText = new Date().toLocaleString();
-            
-            // 展示易错字
-            const errors = Object.entries(errorData)
-                .sort((a, b) => b[1] - a[1])
-                .map(([char, count]) => `${char}(错${count}次)`)
-                .join('，');
-            document.getElementById('error-list').innerText = errors || "无（完美通关！）";
-            
-            document.getElementById('cert-overlay').style.display = 'flex';
+        function checkFinal() {
+            const val = document.getElementById('text-input').value.replace(/\s+/g, "");
+            const target = fullText.replace(/\s+/g, "");
+            if (val === target) alert("旷世奇才！全文默写无误！");
+            else alert("内容还有瑕疵，请核对汉字及标点符号。");
         }
 
         initLevel(1);

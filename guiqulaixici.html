@@ -1,1 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>背诵闯关：归去来兮辞全篇</title>
+    <style>
+        :root { --bg-color: #f4f1e6; --text-color: #333; --primary-color: #6b8e23; --border-color: #c9c4b4; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: "PingFang SC", "STSong", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        /* 导航与进度 */
+        .nav-header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .back-link { text-decoration: none; color: #666; font-size: 14px; }
+        .progress-container { width: 100%; max-width: 600px; margin-bottom: 30px; position: relative; }
+        .progress-line { height: 2px; background: var(--border-color); position: absolute; top: 15px; width: 100%; z-index: 1; }
+        .progress-active { height: 2px; background: var(--primary-color); position: absolute; top: 15px; z-index: 2; transition: width 0.3s; }
+        .nodes { display: flex; justify-content: space-between; position: relative; z-index: 3; }
+        .node { width: 30px; height: 30px; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999; }
+        .node.active { border-color: var(--primary-color); color: var(--primary-color); font-weight: bold; background: #fff; }
 
+        /* 正文区域 - 支持分段 */
+        #game-area { width: 100%; max-width: 600px; padding-bottom: 250px; }
+        #content-body p { line-height: 2.5; font-size: 1.2rem; text-align: justify; text-indent: 2em; margin: 20px 0; }
+        h2 { text-align: center; margin-bottom: 5px; letter-spacing: 4px; }
+        .author { text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 25px; }
+
+        /* 挖空与交互 */
+        .blank { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-bottom: 2px solid #999; margin: 0 2px; vertical-align: middle; cursor: pointer; text-indent: 0; }
+        .blank.active { border-bottom-color: var(--primary-color); background-color: rgba(107, 142, 35, 0.1); animation: breathe 1.2s infinite; }
+        @keyframes breathe { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        .blank.filled { border-bottom: none; color: var(--primary-color); font-weight: bold; width: auto; min-width: 1.2rem; }
+        .blank.wrong { background: #f2dede; border-bottom-color: #d9534f; }
+
+        /* 底部选项卡 */
+        #options-container { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; padding: 20px 0; border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 12px; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+        .option-btn { width: 50px; height: 50px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; background: #fff; border-radius: 6px; cursor: pointer; }
+
+        /* 成功提示页面（全屏遮罩） */
+        #success-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 241, 230, 0.98); z-index: 200; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #success-page h1 { font-size: 1.8rem; color: var(--primary-color); margin-bottom: 20px; }
+        .next-btn { padding: 15px 40px; background: var(--primary-color); color: #fff; border: none; border-radius: 30px; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 10px rgba(107, 142, 35, 0.3); }
+
+        /* 默写模式 */
+        #input-mode { display: none; width: 100%; max-width: 600px; }
+        #text-input { width: 100%; height: 300px; padding: 15px; font-size: 1rem; border: 1px solid var(--border-color); border-radius: 8px; line-height: 1.8; box-sizing: border-box; background: #fff; }
+    </style>
+</head>
+<body>
+    <div id="success-page">
+        <h1>恭喜你完成了一次背诵🎉</h1>
+        <p style="margin-bottom: 30px; color: #666;">百尺竿头，更进一步</p>
+        <button class="next-btn" onclick="closeSuccessPage()">进入下一关</button>
+    </div>
+
+    <div class="nav-header">
+        <a href="index.html" class="back-link">← 目录</a>
+        <span id="level-title" style="font-size: 14px; color: #888;">正在练习：第一关</span>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-line"></div>
+        <div id="progress-active" class="progress-active"></div>
+        <div class="nodes">
+            <div class="node active">1</div>
+            <div class="node">2</div>
+            <div class="node">3</div>
+            <div class="node">4</div>
+            <div class="node">测</div>
+        </div>
+    </div>
+
+    <div id="game-area">
+        <h2>兰亭集序</h2>
+        <div class="author">王羲之 〔魏晋〕</div>
+        <div id="content-body"></div>
+    </div>
+
+    <div id="options-container"></div>
+    <div id="input-mode">
+        <textarea id="text-input" placeholder="请在此处默写全文..."></textarea>
+        <button class="next-btn" style="margin-top:20px; width:100%; border-radius:8px;" onclick="checkFinal()">提交全文核对</button>
+    </div>
+
+    <script>
+        // 包含分段的完整文本
+        const rawFullText = `归去来兮，田园将芜胡不归？既自以心为形役，奚惆怅而独悲？悟已往之不谏，知来者之可追。实迷途其未远，觉今是而昨非。舟遥遥以轻飏，风飘飘而吹衣。问征夫以前路，恨晨光之熹微。
+
+　　乃瞻衡宇，载欣载奔。僮仆欢迎，稚子候门。三径就荒，松菊犹存。携幼入室，有酒盈樽。引壶觞以自酌，眄庭柯以怡颜。倚南窗以寄傲，审容膝之易安。园日涉以成趣，门虽设而常关。策扶老以流憩，时矫首而遐观。云无心以出岫，鸟倦飞而知还。景翳翳以将入，抚孤松而盘桓。
+
+　　归去来兮，请息交以绝游。世与我而相违，复驾言兮焉求？悦亲戚之情话，乐琴书以消忧。农人告余以春及，将有事于西畴。或命巾车，或棹孤舟。既窈窕以寻壑，亦崎岖而经丘。木欣欣以向荣，泉涓涓而始流。善万物之得时，感吾生之行休。
+
+　　已矣乎！寓形宇内复几时？曷不委心任去留？胡为乎遑遑欲何之？富贵非吾愿，帝乡不可期。怀良辰以孤往，或植杖而耘耔。登东皋以舒啸，临清流而赋诗。聊乘化以归尽，乐夫天命复奚疑！`;
+
+        const charPool = [...new Set(rawFullText.replace(/[，。；？、〔〕“”\s]/g, "").split(''))];
+        let currentLevel = 1;
+        let allBlanks = [];
+        let activeIndex = 0;
+
+        function initLevel(level) {
+            const body = document.getElementById('content-body');
+            const opts = document.getElementById('options-container');
+            const inp = document.getElementById('input-mode');
+            body.innerHTML = '';
+            allBlanks = [];
+            activeIndex = 0;
+
+            document.getElementById('level-title').innerText = level === 5 ? "终极测评" : `正在练习：第${level}关`;
+            document.querySelectorAll('.node').forEach((n, i) => n.classList.toggle('active', i < level));
+            document.getElementById('progress-active').style.width = (level - 1) * 25 + '%';
+
+            if (level === 5) {
+                opts.style.display = 'none';
+                inp.style.display = 'block';
+                return;
+            }
+
+            opts.style.display = 'flex';
+            inp.style.display = 'none';
+
+            // 处理分段渲染
+            const paragraphs = rawFullText.split('\n');
+            const gapRate = [0.1, 0.25, 0.45, 0.7][level-1];
+
+            paragraphs.forEach(para => {
+                const p = document.createElement('p');
+                const chars = para.split('');
+                chars.forEach(char => {
+                    if (/[，。；？、〔〕“”\s]/.test(char)) {
+                        p.appendChild(document.createTextNode(char));
+                    } else {
+                        if (Math.random() < gapRate) {
+                            const span = document.createElement('span');
+                            span.className = 'blank';
+                            span.dataset.ans = char;
+                            p.appendChild(span);
+                            allBlanks.push(span);
+                        } else {
+                            p.appendChild(document.createTextNode(char));
+                        }
+                    }
+                });
+                body.appendChild(p);
+            });
+
+            if (allBlanks.length === 0) { initLevel(level); return; }
+            refreshUI();
+        }
+
+        function refreshUI() {
+            if (activeIndex >= allBlanks.length) {
+                document.getElementById('success-page').style.display = 'flex';
+                return;
+            }
+
+            allBlanks.forEach((b, i) => {
+                b.classList.remove('active');
+                if (i === activeIndex) {
+                    b.classList.add('active');
+                    b.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+
+            const correctChar = allBlanks[activeIndex].dataset.ans;
+            const options = [correctChar];
+            const others = charPool.filter(c => c !== correctChar).sort(() => Math.random() - 0.5).slice(0, 4);
+            options.push(...others);
+            options.sort(() => Math.random() - 0.5);
+
+            const optsContainer = document.getElementById('options-container');
+            optsContainer.innerHTML = '';
+            options.forEach(char => {
+                const btn = document.createElement('div');
+                btn.className = 'option-btn';
+                btn.innerText = char;
+                btn.onclick = () => {
+                    if (char === correctChar) {
+                        allBlanks[activeIndex].innerText = char;
+                        allBlanks[activeIndex].className = 'blank filled';
+                        activeIndex++;
+                        refreshUI();
+                    } else {
+                        allBlanks[activeIndex].classList.add('wrong');
+                        setTimeout(() => allBlanks[activeIndex].classList.remove('wrong'), 400);
+                    }
+                };
+                optsContainer.appendChild(btn);
+            });
+        }
+
+        function closeSuccessPage() {
+            document.getElementById('success-page').style.display = 'none';
+            currentLevel++;
+            initLevel(currentLevel);
+        }
+
+        function checkFinal() {
+            const val = document.getElementById('text-input').value.replace(/[，。；？、〔〕“”\s]/g, "");
+            const target = rawFullText.replace(/[，。；？、〔〕“”\s]/g, "");
+            if (val === target) {
+                document.getElementById('success-page').querySelector('p').innerText = "你已完美掌握全篇《兰亭集序》！";
+                document.getElementById('success-page').style.display = 'flex';
+                document.getElementById('success-page').querySelector('button').style.display = 'none';
+            } else {
+                alert("文字或排序还有小瑕疵，请对照原文再检查一下吧。");
+            }
+        }
+
+        initLevel(1);
+    </script>
+</body>
+</html>

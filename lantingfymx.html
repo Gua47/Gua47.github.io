@@ -45,6 +45,21 @@
             justify-content: center;
             flex: 1;
             margin-top: 40px;
+            position: relative;
+        }
+
+        .back-to-main {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 16px;
+            transition: color 0.3s ease;
+        }
+        
+        .back-to-main:hover {
+            color: var(--accent-green);
         }
 
         .main-title {
@@ -56,7 +71,7 @@
 
         .sub-title {
             color: var(--text-muted);
-            margin-bottom: 50px;
+            margin-bottom: 40px;
         }
 
         .mode-btn {
@@ -80,10 +95,9 @@
 
         /* ----- 游戏界面 ----- */
         #game-screen {
-            display: none; /* 默认隐藏，由首页进入 */
+            display: none; 
         }
 
-        /* 顶部状态栏 */
         .header {
             display: flex;
             justify-content: space-between;
@@ -121,7 +135,6 @@
             margin: 0;
         }
 
-        /* 关卡提示 */
         #level-badge {
             text-align: center;
             font-size: 16px;
@@ -131,7 +144,6 @@
             letter-spacing: 1px;
         }
 
-        /* 翻译展示区 */
         .translation-box {
             font-size: 18px;
             line-height: 1.6;
@@ -141,7 +153,6 @@
             min-height: 50px;
         }
 
-        /* 填空展示区 */
         .blanks-container {
             display: flex;
             flex-wrap: wrap;
@@ -198,7 +209,6 @@
             height: 1px;
         }
 
-        /* 底部导航按钮 */
         .nav-buttons {
             display: flex;
             justify-content: space-between;
@@ -266,18 +276,23 @@
 <body>
 
 <div id="app">
-    <!-- 首页选择界面 -->
     <div id="start-screen">
+        <a href="index.html" class="back-to-main">← 返回总目录</a>
+
         <h1 class="main-title">兰亭集序</h1>
         <p class="sub-title">默写通关挑战</p>
+        
+        <p style="font-size: 14px; color: #d9534f; margin-bottom: 20px; text-align: center; padding: 0 20px;">
+            提示：建议使用<strong>手写键盘</strong>练习以增强记忆。
+        </p>
+
         <button class="mode-btn" onclick="initGame(1)">顺序全文默写</button>
         <button class="mode-btn" onclick="initGame(2)">随机乱序挑战</button>
     </div>
 
-    <!-- 练习界面 -->
     <div id="game-screen">
         <div class="header">
-            <button class="header-btn" onclick="returnToStart()">← 返回首页</button>
+            <button class="header-btn" onclick="returnToStart()">← 返回模式选择</button>
             <span id="progress-text">进度：1/8</span>
         </div>
 
@@ -292,7 +307,6 @@
 
         <div class="blanks-container" id="blanks" onclick="focusInput()"></div>
 
-        <!-- 拦截联想功能 -->
         <input type="text" id="user-input" 
                autocomplete="off" 
                autocorrect="off" 
@@ -306,11 +320,9 @@
         </div>
     </div>
 
-    <!-- 总结界面 -->
     <div id="summary-screen">
         <div class="title-area">
             <h1 id="summary-title">练习完成</h1>
-            <!-- 评语展示区 -->
             <p id="evaluation-text"></p>
             <p id="summary-subtitle">以下是本次错误超过3次的重点突破句子：</p>
         </div>
@@ -389,14 +401,10 @@
     let currentIndex = 0;
     let highestIndex = 0; 
     let typedProgress = []; 
-    
     let currentLevel = 1; 
 
-    // 错题统计机制
     let mistakeCounter = {}; 
     let currentSessionMistakes = new Set(); 
-    
-    // 自动输入检测计数器
     let autoInputCount = 0; 
 
     const transEl = document.getElementById('translation');
@@ -429,7 +437,6 @@
         }
     }
 
-    // 返回首页重置状态
     function returnToStart() {
         document.getElementById('start-screen').style.display = 'flex';
         document.getElementById('game-screen').style.display = 'none';
@@ -448,7 +455,7 @@
         currentLevel = level;
         currentIndex = 0;
         highestIndex = 0;
-        autoInputCount = 0; // 重置自动输入次数
+        autoInputCount = 0;
         mistakeCounter = {};
         currentSessionMistakes.clear();
         typedProgress = new Array(fullData.length).fill("");
@@ -521,7 +528,7 @@
         if (currentIndex < highestIndex) {
             btnNext.disabled = false;
             if (currentIndex === currentData.length - 1) {
-                btnNext.innerText = "查看总结"; // 不再自动跳入下一关，完成即总结
+                btnNext.innerText = "查看总结"; 
             } else {
                 btnNext.innerText = "下一句";
             }
@@ -543,12 +550,11 @@
             currentIndex++;
             loadSentence();
         } else if (currentIndex === currentData.length - 1 && highestIndex === currentData.length) {
-            // 完成本模式的最后一句，直接展示总结
             showSummary(); 
         }
     }
 
-    // 输入法逻辑
+    // 输入法逻辑（兼容拼音及手写）
     inputEl.addEventListener('compositionstart', () => { isComposing = true; });
     inputEl.addEventListener('compositionend', () => { 
         isComposing = false; 
@@ -567,13 +573,12 @@
         const previousLen = typedProgress[currentIndex].length;
         
         if (origPureChars.startsWith(rawVal)) {
-            // 检测是否自动填入了3个字及以上
+            // 自动输入检测：单次增长大于3字
             const newLen = rawVal.length;
             if (newLen > previousLen && (newLen - previousLen) >= 3) {
                 autoInputCount++;
             }
 
-            // 更新输入进度
             typedProgress[currentIndex] = rawVal;
             renderBlanks(rawVal, false);
             
@@ -592,24 +597,20 @@
             if (mistakeCounter[origIndex] >= 3) {
                 currentSessionMistakes.add(origIndex);
             }
-            
-            // 强制撤回
             inputEl.value = typedProgress[currentIndex];
         }
     }
 
-    // 总结界面
     function showSummary() {
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('summary-screen').style.display = 'block';
         
-        // 渲染评语
         if (autoInputCount > 8) {
             evalEl.innerText = `千里之堤，溃于蚁穴。你用了 ${autoInputCount} 次自动输入。`;
-            evalEl.style.color = "#d9534f"; // 警示红
+            evalEl.style.color = "#d9534f"; 
         } else {
             evalEl.innerText = "千里之行，始于足下。一次次键盘的敲击，是你的努力可见。";
-            evalEl.style.color = "var(--accent-green)"; // 鼓励绿
+            evalEl.style.color = "var(--accent-green)"; 
         }
 
         const listEl = document.getElementById('mistakes-list');
@@ -617,7 +618,7 @@
         let mistakesArray = Array.from(currentSessionMistakes);
 
         if (mistakesArray.length > 0) {
-            document.getElementById('summary-subtitle').innerText = "以下是本次练习中错误达到或超过 3 次的句子，需要重点加强：";
+            document.getElementById('summary-subtitle').innerText = "以下是本次练习中错误超过3次的句子：";
             mistakesArray.forEach(index => {
                 const item = fullData[index];
                 const div = document.createElement('div');
@@ -626,7 +627,7 @@
                 listEl.appendChild(div);
             });
         } else {
-            document.getElementById('summary-subtitle').innerText = "非常完美！本模式全部通关，没有任何句子错误超过3次。";
+            document.getElementById('summary-subtitle').innerText = "非常完美！全部通关且没有严重错误。";
         }
     }
 
@@ -639,9 +640,7 @@
         }
     });
 
-    // 页面加载完毕后停留在主页选择界面
     window.onload = returnToStart;
-
 </script>
 </body>
 </html>

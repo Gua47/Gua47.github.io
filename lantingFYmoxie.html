@@ -17,7 +17,7 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            font-family: "STZhongsong", "SimSun", "Songti SC", serif; /* 传统宋体/仿宋更符合古文意境 */
+            font-family: "STZhongsong", "SimSun", "Songti SC", serif;
             margin: 0;
             padding: 0;
             display: flex;
@@ -102,7 +102,7 @@
             color: var(--text-main);
         }
 
-        /* 隐藏但可聚焦的输入框，用于唤起手机键盘 */
+        /* 输入框 */
         #user-input {
             width: 100%;
             padding: 15px;
@@ -119,6 +119,38 @@
         #user-input:focus {
             border-color: var(--accent-green);
         }
+        
+        #user-input:disabled {
+            background-color: rgba(0,0,0,0.03);
+            color: var(--text-muted);
+            border-color: var(--line-color);
+        }
+
+        /* 底部导航按钮 (新增功能) */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .nav-btn {
+            background-color: transparent;
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .nav-btn:disabled {
+            color: var(--line-color);
+            border-color: var(--line-color);
+            cursor: not-allowed;
+            background-color: transparent;
+        }
 
         /* 总结界面 */
         #summary-screen {
@@ -133,9 +165,10 @@
             border-radius: 8px;
             margin-bottom: 10px;
             font-size: 16px;
+            line-height: 1.5;
         }
 
-        button {
+        .primary-btn {
             background-color: var(--accent-green);
             color: white;
             border: none;
@@ -163,15 +196,17 @@
             <p>王羲之〔魏晋〕</p>
         </div>
 
-        <div class="translation-box" id="translation">
-            <!-- 翻译加载在这里 -->
-        </div>
+        <div class="translation-box" id="translation"></div>
 
-        <div class="blanks-container" id="blanks">
-            <!-- 横线和标点加载在这里 -->
-        </div>
+        <div class="blanks-container" id="blanks"></div>
 
-        <input type="text" id="user-input" placeholder="请在此输入汉字（无需输入标点）" autocomplete="off">
+        <input type="text" id="user-input" placeholder="请在此输入汉字" autocomplete="off">
+
+        <!-- 新增的前后翻页导航 -->
+        <div class="nav-buttons">
+            <button id="btn-prev" class="nav-btn" onclick="goPrev()">上一句</button>
+            <button id="btn-next" class="nav-btn" onclick="goNext()">下一句</button>
+        </div>
     </div>
 
     <!-- 总结界面 -->
@@ -181,12 +216,11 @@
             <p id="summary-subtitle">以下是本次练习中出错的句子</p>
         </div>
         <div id="mistakes-list"></div>
-        <button onclick="startNextSession()">完成并返回</button>
+        <button class="primary-btn" onclick="startNextSession()">完成并返回</button>
     </div>
 </div>
 
 <script>
-    // 题库数据（可在此处继续添加剩余的句子）
     const fullData = [
         { orig: "永和九年，岁在癸丑，", trans: "永和九年，时在癸丑之年，" },
         { orig: "暮春之初，", trans: "三月上旬，" },
@@ -198,11 +232,12 @@
         { orig: "引以为流觞曲水，列坐其次。", trans: "引（这些流水）作为浮动酒杯的弯曲水道，大家依次坐在水边。" }
     ];
 
-    let currentData = []; // 当前需要练习的数据（可能是全集，也可能是错题集）
+    let currentData = []; 
     let currentIndex = 0;
-    let isReviewMode = false;
+    let highestIndex = 0; // 记录当前解锁到的最高题目索引
+    let typedProgress = []; // 记录每道题用户已经打出的正确进度
     
-    let currentSessionMistakes = new Set(); // 本次练习产生的错题索引（针对 fullData 的索引）
+    let currentSessionMistakes = new Set();
     let savedMistakes = JSON.parse(localStorage.getItem('lanting_mistakes')) || [];
 
     const transEl = document.getElementById('translation');
@@ -210,62 +245,70 @@
     const inputEl = document.getElementById('user-input');
     const progressEl = document.getElementById('progress-text');
     const modeEl = document.getElementById('mode-text');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
 
-    // 提取纯汉字，用于比对
+    // 中文输入法状态标记
+    let isComposing = false; 
+
     function getPureChars(str) {
         return str.replace(/[，。；？！、\s]/g, '');
     }
 
-    // 初始化游戏
     function initGame() {
         document.getElementById('game-screen').style.display = 'block';
         document.getElementById('summary-screen').style.display = 'none';
         currentSessionMistakes.clear();
         currentIndex = 0;
+        highestIndex = 0;
 
         if (savedMistakes.length > 0) {
-            isReviewMode = true;
             modeEl.innerText = "复习模式 (上次错题)";
-            // 筛选出售错题集
             currentData = savedMistakes.map(index => ({...fullData[index], originalIndex: index}));
         } else {
-            isReviewMode = false;
             modeEl.innerText = "全文练习";
             currentData = fullData.map((item, index) => ({...item, originalIndex: index}));
         }
 
-        inputEl.value = "";
+        // 初始化进度数组
+        typedProgress = new Array(currentData.length).fill("");
+        
         loadSentence();
     }
 
-    // 加载当前句子
     function loadSentence() {
-        if (currentIndex >= currentData.length) {
-            showSummary();
-            return;
-        }
-
         const currentItem = currentData[currentIndex];
         transEl.innerText = currentItem.trans;
         progressEl.innerText = `当前进度：${currentIndex + 1} / ${currentData.length}`;
-        inputEl.value = "";
-        renderBlanks("");
         
-        // 自动聚焦输入框 (在手机端可能需要用户手动点击，但PC端有效)
-        setTimeout(() => inputEl.focus(), 100);
+        // 核心逻辑：判断当前题目是“回看模式”还是“正在练习模式”
+        if (currentIndex < highestIndex) {
+            // 回看模式：已完成的题，锁定输入框，显示完整原文
+            const origPure = getPureChars(currentItem.orig);
+            inputEl.value = origPure;
+            inputEl.disabled = true;
+            inputEl.placeholder = "已完成";
+            renderBlanks(origPure);
+        } else {
+            // 练习模式：未完成的题，开放输入框，恢复之前的正确进度
+            inputEl.value = typedProgress[currentIndex];
+            inputEl.disabled = false;
+            inputEl.placeholder = "请在此输入汉字";
+            renderBlanks(typedProgress[currentIndex]);
+            setTimeout(() => inputEl.focus(), 100);
+        }
+
+        updateNavButtons();
     }
 
-    // 渲染横线和已输入的字
     function renderBlanks(typedPureChars) {
         const origText = currentData[currentIndex].orig;
         blanksEl.innerHTML = "";
-        
-        let charIndex = 0; // 记录已渲染的汉字数量
+        let charIndex = 0; 
 
         for (let i = 0; i < origText.length; i++) {
             const char = origText[i];
             const isPunctuation = /[，。；？！、\s]/.test(char);
-
             const span = document.createElement('span');
             
             if (isPunctuation) {
@@ -273,10 +316,9 @@
                 span.innerText = char;
             } else {
                 span.className = "char-box char-blank";
-                // 如果用户已经输入到了这个位置
                 if (charIndex < typedPureChars.length) {
                     span.innerText = typedPureChars[charIndex];
-                    span.style.borderBottom = "none"; // 有字了去掉下划线
+                    span.style.borderBottom = "none"; 
                 } else {
                     span.innerText = "";
                 }
@@ -286,45 +328,90 @@
         }
     }
 
-    // 监听输入
-    inputEl.addEventListener('input', (e) => {
-        const typedText = e.target.value;
-        const currentItem = currentData[currentIndex];
-        const origPureChars = getPureChars(currentItem.orig);
+    // 导航按钮状态更新
+    function updateNavButtons() {
+        btnPrev.disabled = (currentIndex === 0);
         
-        // 我们只取输入长度的部分进行前缀对比
-        const typedLength = typedText.length;
-        const expectedPrefix = origPureChars.substring(0, typedLength);
-
-        if (typedText === expectedPrefix) {
-            // 输入正确，更新界面
-            renderBlanks(typedText);
-
-            // 如果全部打完且正确
-            if (typedText === origPureChars) {
-                setTimeout(() => {
-                    currentIndex++;
-                    loadSentence();
-                }, 300); // 短暂延迟让学生看清完整的字
-            }
+        if (currentIndex < highestIndex) {
+            btnNext.disabled = false;
+            btnNext.innerText = (currentIndex === currentData.length - 1) ? "查看总结" : "下一句";
         } else {
-            // 输入不正确（包含错字）
-            // 1. 不让错误的字显示出来（退回上一步正确的状态）
-            inputEl.value = typedText.substring(0, typedLength - 1);
-            
-            // 2. 记录错误：只要卡壳/打错，这句就算错题
-            currentSessionMistakes.add(currentItem.originalIndex);
+            btnNext.disabled = true;
+            btnNext.innerText = "下一句";
+        }
+    }
+
+    function goPrev() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            loadSentence();
+        }
+    }
+
+    function goNext() {
+        if (currentIndex < currentData.length - 1) {
+            currentIndex++;
+            loadSentence();
+        } else if (currentIndex === currentData.length - 1 && highestIndex === currentData.length) {
+            showSummary();
+        }
+    }
+
+    // ========== 输入法兼容与校验核心逻辑 ==========
+
+    inputEl.addEventListener('compositionstart', () => {
+        isComposing = true; // 用户开始打拼音
+    });
+
+    inputEl.addEventListener('compositionend', () => {
+        isComposing = false; // 用户选中汉字，拼音组合结束
+        handleInputValidation(); 
+    });
+
+    inputEl.addEventListener('input', () => {
+        // 如果不在打拼音状态（比如直接复制粘贴、或者部分手机的默认输入行为），直接校验
+        if (!isComposing) {
+            handleInputValidation();
         }
     });
 
-    // 结束与总结
+    function handleInputValidation() {
+        if (currentIndex < highestIndex) return; // 回看模式不处理输入
+
+        const origPureChars = getPureChars(currentData[currentIndex].orig);
+        const rawVal = inputEl.value;
+        
+        // 校验：如果当前输入框里的文字，完全符合正确答案的前缀
+        if (origPureChars.startsWith(rawVal)) {
+            typedProgress[currentIndex] = rawVal;
+            renderBlanks(rawVal);
+            
+            // 判断这句是否全部打完
+            if (rawVal === origPureChars) {
+                highestIndex = Math.max(highestIndex, currentIndex + 1);
+                inputEl.blur(); // 暂时收起键盘
+                
+                setTimeout(() => {
+                    goNext();
+                }, 500); 
+            }
+        } else {
+            // 输入不匹配（打错了汉字）
+            currentSessionMistakes.add(currentData[currentIndex].originalIndex);
+            
+            // 撤回输入框内容，恢复到上一次正确的进度
+            inputEl.value = typedProgress[currentIndex];
+        }
+    }
+
+    // ========== 总结与复习逻辑 ==========
+
     function showSummary() {
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('summary-screen').style.display = 'block';
         
         const listEl = document.getElementById('mistakes-list');
         listEl.innerHTML = "";
-
         let mistakesArray = Array.from(currentSessionMistakes);
 
         if (mistakesArray.length > 0) {
@@ -336,22 +423,18 @@
                 div.innerHTML = `<strong>原文：</strong>${item.orig}<br><span style="color:#666; font-size:14px;"><strong>译文：</strong>${item.trans}</span>`;
                 listEl.appendChild(div);
             });
-            // 保存错题供下次使用
             localStorage.setItem('lanting_mistakes', JSON.stringify(mistakesArray));
         } else {
             document.getElementById('summary-subtitle').innerText = "太棒了！本次练习全对，没有错题。";
-            // 清空错题本
             localStorage.removeItem('lanting_mistakes');
         }
     }
 
     function startNextSession() {
-        // 重新获取一下本地存储的错题情况，并重新初始化
         savedMistakes = JSON.parse(localStorage.getItem('lanting_mistakes')) || [];
         initGame();
     }
 
-    // 页面加载完毕后启动
     window.onload = initGame;
 
 </script>

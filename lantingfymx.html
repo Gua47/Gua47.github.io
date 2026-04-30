@@ -34,55 +34,9 @@
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
         }
 
-        /* ----- 首页界面 ----- */
-        #start-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-            margin-top: 40px;
-        }
-
-        .main-title {
-            font-size: 36px;
-            font-weight: normal;
-            margin-bottom: 10px;
-            letter-spacing: 3px;
-        }
-
-        .sub-title {
-            color: var(--text-muted);
-            margin-bottom: 50px;
-        }
-
-        .mode-btn {
-            background-color: transparent;
-            color: var(--accent-green);
-            border: 2px solid var(--accent-green);
-            padding: 15px 30px;
-            font-size: 18px;
-            border-radius: 30px;
-            margin: 15px 0;
-            width: 80%;
-            max-width: 300px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .mode-btn:active {
-            background-color: rgba(106, 139, 71, 0.1);
-        }
-
-        /* ----- 游戏界面 ----- */
-        #game-screen {
-            display: none; /* 默认隐藏 */
-        }
-
+        /* 顶部状态栏 */
         .header {
             display: flex;
             justify-content: space-between;
@@ -90,15 +44,6 @@
             color: var(--text-muted);
             margin-bottom: 20px;
             margin-top: 10px;
-        }
-
-        .header-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-family: inherit;
-            cursor: pointer;
-            padding: 0;
         }
 
         .title-area {
@@ -119,6 +64,7 @@
             margin: 0;
         }
 
+        /* 关卡提示 */
         #level-badge {
             text-align: center;
             font-size: 16px;
@@ -128,6 +74,7 @@
             letter-spacing: 1px;
         }
 
+        /* 翻译展示区 */
         .translation-box {
             font-size: 18px;
             line-height: 1.6;
@@ -137,6 +84,7 @@
             min-height: 50px;
         }
 
+        /* 填空展示区（模拟输入框的灰色背景底板） */
         .blanks-container {
             display: flex;
             flex-wrap: wrap;
@@ -185,6 +133,7 @@
             margin: 0 2px;
         }
 
+        /* 真正接收输入的文本框（彻底隐藏，加入了防联想属性） */
         #user-input {
             position: absolute;
             left: -9999px;
@@ -193,6 +142,7 @@
             height: 1px;
         }
 
+        /* 底部导航按钮 */
         .nav-buttons {
             display: flex;
             justify-content: space-between;
@@ -217,11 +167,10 @@
             cursor: not-allowed;
         }
 
-        /* ----- 总结界面 ----- */
+        /* 总结界面 */
         #summary-screen {
-            display: none; /* 默认隐藏 */
+            display: none;
             text-align: center;
-            padding-bottom: 40px;
         }
         
         #evaluation-text {
@@ -260,22 +209,10 @@
 <body>
 
 <div id="app">
-    <!-- 首页选择界面 -->
-    <div id="start-screen">
-        <h1 class="main-title">兰亭集序</h1>
-        <p class="sub-title">默写通关挑战</p>
-        <!-- 提示学生切换手写键盘 -->
-        <p style="font-size: 14px; color: #d9534f; margin-bottom: 20px; text-align: center; padding: 0 20px;">
-            提示：为加深记忆，建议将手机输入法切换为<strong>“手写模式”</strong>进行练习。
-        </p>
-        <button class="mode-btn" onclick="initGame(1)">顺序全文默写</button>
-        <button class="mode-btn" onclick="initGame(2)">随机乱序挑战</button>
-    </div>
-
     <!-- 练习界面 -->
     <div id="game-screen">
         <div class="header">
-            <button class="header-btn" onclick="returnToStart()">← 返回首页</button>
+            <span id="mode-text">← 目录</span>
             <span id="progress-text">进度：1/8</span>
         </div>
 
@@ -290,7 +227,7 @@
 
         <div class="blanks-container" id="blanks" onclick="focusInput()"></div>
 
-        <!-- 拦截联想功能，同时兼容手写输入 -->
+        <!-- 拦截联想功能 -->
         <input type="text" id="user-input" 
                autocomplete="off" 
                autocorrect="off" 
@@ -308,11 +245,12 @@
     <div id="summary-screen">
         <div class="title-area">
             <h1 id="summary-title">练习完成</h1>
+            <!-- 评语展示区 -->
             <p id="evaluation-text"></p>
             <p id="summary-subtitle">以下是本次错误超过3次的重点突破句子：</p>
         </div>
         <div id="mistakes-list"></div>
-        <button class="primary-btn" onclick="returnToStart()">返回首页</button>
+        <button class="primary-btn" onclick="startNextSession()">再练一次</button>
     </div>
 </div>
 
@@ -332,11 +270,14 @@
     let currentIndex = 0;
     let highestIndex = 0; 
     let typedProgress = []; 
+    
     let currentLevel = 1; 
 
-    // 错题与作弊统计
+    // 错题统计机制
     let mistakeCounter = {}; 
     let currentSessionMistakes = new Set(); 
+    
+    // 新增：自动输入检测计数器（贯穿整个文章练习）
     let autoInputCount = 0; 
 
     const transEl = document.getElementById('translation');
@@ -369,38 +310,22 @@
         }
     }
 
-    // 页面跳转逻辑
-    function returnToStart() {
-        document.getElementById('start-screen').style.display = 'flex';
-        document.getElementById('game-screen').style.display = 'none';
-        document.getElementById('summary-screen').style.display = 'none';
-        
-        // 重置所有状态
-        mistakeCounter = {};
-        currentSessionMistakes.clear();
-        autoInputCount = 0;
-    }
-
-    function initGame(level) {
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('summary-screen').style.display = 'none';
+    function initGame(level = 1) {
         document.getElementById('game-screen').style.display = 'block';
+        document.getElementById('summary-screen').style.display = 'none';
         
         currentLevel = level;
         currentIndex = 0;
         highestIndex = 0;
-        autoInputCount = 0;
-        mistakeCounter = {};
-        currentSessionMistakes.clear();
         typedProgress = new Array(fullData.length).fill("");
 
         let baseData = fullData.map((item, index) => ({...item, originalIndex: index}));
 
         if (currentLevel === 1) {
-            levelBadgeEl.innerText = "当前模式：顺序全文默写";
+            levelBadgeEl.innerText = "第一关：全文顺序默写";
             currentData = baseData;
         } else if (currentLevel === 2) {
-            levelBadgeEl.innerText = "当前模式：随机乱序挑战";
+            levelBadgeEl.innerText = "第二关：随机乱序挑战";
             currentData = shuffleArray(baseData);
         }
 
@@ -462,7 +387,7 @@
         if (currentIndex < highestIndex) {
             btnNext.disabled = false;
             if (currentIndex === currentData.length - 1) {
-                btnNext.innerText = "查看总结";
+                btnNext.innerText = currentLevel === 1 ? "进入第二关" : "查看总结";
             } else {
                 btnNext.innerText = "下一句";
             }
@@ -484,11 +409,16 @@
             currentIndex++;
             loadSentence();
         } else if (currentIndex === currentData.length - 1 && highestIndex === currentData.length) {
-            showSummary(); 
+            if (currentLevel === 1) {
+                alert("太棒了！第一关顺序背诵已完成，即将进入第二关（乱序挑战）。");
+                initGame(2); 
+            } else {
+                showSummary(); 
+            }
         }
     }
 
-    // 输入法逻辑（兼容手写）
+    // 输入法逻辑
     inputEl.addEventListener('compositionstart', () => { isComposing = true; });
     inputEl.addEventListener('compositionend', () => { 
         isComposing = false; 
@@ -507,12 +437,13 @@
         const previousLen = typedProgress[currentIndex].length;
         
         if (origPureChars.startsWith(rawVal)) {
-            // 检测是否自动填入了3个字及以上（手写通常是每次1个字，不会触发此惩罚）
+            // 新增逻辑：检测是否自动填入了3个字及以上
             const newLen = rawVal.length;
             if (newLen > previousLen && (newLen - previousLen) >= 3) {
                 autoInputCount++;
             }
 
+            // 更新输入进度
             typedProgress[currentIndex] = rawVal;
             renderBlanks(rawVal, false);
             
@@ -531,6 +462,7 @@
             if (mistakeCounter[origIndex] >= 3) {
                 currentSessionMistakes.add(origIndex);
             }
+            
             // 强制撤回
             inputEl.value = typedProgress[currentIndex];
         }
@@ -544,10 +476,10 @@
         // 渲染评语
         if (autoInputCount > 8) {
             evalEl.innerText = `千里之堤，溃于蚁穴。你用了 ${autoInputCount} 次自动输入。`;
-            evalEl.style.color = "#d9534f"; 
+            evalEl.style.color = "#d9534f"; // 警示红
         } else {
             evalEl.innerText = "千里之行，始于足下。一次次键盘的敲击，是你的努力可见。";
-            evalEl.style.color = "var(--accent-green)"; 
+            evalEl.style.color = "var(--accent-green)"; // 鼓励绿
         }
 
         const listEl = document.getElementById('mistakes-list');
@@ -564,8 +496,16 @@
                 listEl.appendChild(div);
             });
         } else {
-            document.getElementById('summary-subtitle').innerText = "非常完美！本模式全部通关，没有任何句子错误超过3次。";
+            document.getElementById('summary-subtitle').innerText = "非常完美！两关全部通关，没有任何句子错误超过3次。";
         }
+    }
+
+    function startNextSession() {
+        // 重置所有数据重新开始
+        mistakeCounter = {};
+        currentSessionMistakes.clear();
+        autoInputCount = 0; // 重置自动输入次数
+        initGame(1);
     }
 
     document.addEventListener('click', (e) => {
@@ -576,6 +516,8 @@
             }
         }
     });
+
+    window.onload = () => initGame(1);
 
 </script>
 </body>

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>子路课下注释配对练习</title>
+    <style>
+        /* ================= 基础重置 ================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f2e9 0%, #e8e1c7 100%);
+            min-height: 100vh;
+            padding: 10px;
+            color: #3a2618;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", STHeiti, "Microsoft Yahei", Tahoma, sans-serif;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="%23d4c8a5" stroke-width="0.5"/></svg>');
+        }
+        
+        /* ================= 横屏强制提示遮罩层 ================= */
+        #landscape-tips {
+            display: none; /* 默认隐藏 */
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(93, 64, 55, 0.98);
+            color: #fff;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+        
+        #landscape-tips svg {
+            width: 80px; 
+            height: 80px;
+            margin-bottom: 20px;
+            animation: rotatePhone 2.5s infinite ease-in-out;
+        }
+        
+        @keyframes rotatePhone {
+            0% { transform: rotate(0deg); }
+            40% { transform: rotate(-90deg); }
+            60% { transform: rotate(-90deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* 当检测到竖屏时，显示遮罩，隐藏游戏内容 */
+        @media screen and (orientation: portrait) {
+            #landscape-tips { display: flex; }
+            .container { display: none !important; }
+        }
+
+        /* ================= 游戏主体布局 ================= */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 253, 245, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #d4c8a5;
+            padding: 15px;
+            position: relative;
+            overflow: hidden;
+            display: block; /* 横屏时正常显示 */
+        }
+        
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 6px;
+            background: linear-gradient(90deg, #8b5a2b, #c19a6b, #8b5a2b);
+            border-radius: 12px 12px 0 0;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed #c19a6b;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 1.6rem;
+            color: #5d4037;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+            letter-spacing: 2px;
+            display: inline-block;
+            position: relative;
+        }
+        
+        h1:after {
+            content: "";
+            position: absolute;
+            bottom: -5px; left: 50%;
+            transform: translateX(-50%);
+            width: 60px; height: 3px;
+            background: #c19a6b;
+            border-radius: 2px;
+        }
+        
+        .subtitle { font-size: 0.9rem; color: #7d5d3b; font-style: italic; margin-top: 8px; }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            background: #e8dfca;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #c9b99b;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .info-item {
+            text-align: center;
+            flex: 1;
+            position: relative;
+            padding: 0 8px;
+        }
+        
+        .info-item:not(:last-child):after {
+            content: "";
+            position: absolute;
+            right: 0; top: 50%;
+            transform: translateY(-50%);
+            height: 30px; width: 1px;
+            background: #c9b99b;
+        }
+        
+        .info-label { font-size: 0.85rem; color: #7d5d3b; margin-bottom: 2px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .info-value { font-size: 1.3rem; font-weight: bold; color: #5d4037; }
+        
+        /* === 核心排版：左右分栏布局 (适配横屏) === */
+        .game-area {
+            display: flex;
+            flex-direction: row; /* 强制左右排版 */
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .column {
+            flex: 1;
+            min-height: 50vh; /* 根据屏幕高度自适应 */
+            background: #f9f5eb;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid #d4c8a5;
+            position: relative;
+        }
+        
+        .column:before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: #c19a6b;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .column-title {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #d4c8a5;
+            color: #5d4037;
+            font-size: 1.1rem;
+            position: relative;
+        }
+        
+        .column-title:after {
+            content: "";
+            position: absolute;
+            bottom: -1px; left: 50%;
+            transform: translateX(-50%);
+            width: 40px; height: 2px;
+            background: #8b5a2b;
+        }
+        
+        .words-container, .meanings-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            align-content: flex-start; /* 关键：让消除后的元素自动往上靠拢 */
+        }
+        
+        /* ================= 卡片样式 ================= */
+        .word-item, .meaning-item {
+            padding: 10px 14px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.05rem; /* 稍微放大一点适配手机 */
+            user-select: none;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 75px; /* 加大触控面积 */
+            max-width: 100%;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        
+        .word-item { background: linear-gradient(to right, #8c7b69, #a9927d); color: #f9f5eb; border: 1px solid #7d6b58; }
+        .meaning-item { background: linear-gradient(to right, #7cb342, #5d8c22); color: #3a2618; border: 1px solid #5d8c22; }
+        
+        .word-item:active, .meaning-item:active { transform: translateY(2px); }
+        
+        /* 选中高亮状态 */
+        .word-item.selected {
+            background: linear-gradient(to right, #7cb342, #5d8c22);
+            transform: scale(1.03);
+            box-shadow: 0 0 8px rgba(124, 179, 66, 0.25);
+            color: #fff;
+            border: 1px solid #5d8c22;
+        }
+        
+        .meaning-item.selected {
+            background: linear-gradient(to right, #42a5f5, #1976d2);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(66, 165, 245, 0.4);
+            color: #fff;
+            border: 1px solid #1976d2;
+        }
+        
+        .word-item.matched, .meaning-item.matched {
+            pointer-events: none;
+        }
+        
+        /* ================= 按钮及其他辅助组件 ================= */
+        .controls { text-align: center; margin-top: 15px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+        
+        button {
+            background: linear-gradient(to bottom, #8b5a2b, #6d4c35);
+            color: #f9f5eb; border: none; padding: 10px 25px;
+            font-size: 1rem; border-radius: 30px; cursor: pointer;
+            transition: all 0.3s ease; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+            border: 1px solid #6d4c35; letter-spacing: 1px;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        
+        button:active { transform: translateY(2px); box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15); }
+        
+        .completion-message {
+            text-align: center; font-size: 1.4rem; color: #5d4037; padding: 20px;
+            margin-top: 15px; display: none; background: rgba(124, 179, 66, 0.15);
+            border-radius: 8px; border: 2px dashed #7cb342; animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        
+        /* 编辑词库及说明部分的折叠面板样式保持原样 */
+        .instructions, .edit-section {
+            background: #f0e9db; border-radius: 8px; padding: 15px;
+            margin-top: 20px; border: 1px solid #d4c8a5;
+        }
+        .instructions h3, .edit-section h3 { color: #5d4037; margin-bottom: 10px; text-align: center; font-size: 1.1rem; }
+        .instructions ol { padding-left: 20px; line-height: 1.6; font-size: 0.9rem; }
+        .instructions strong { color: #8b5a2b; }
+        
+        .edit-section { display: none; }
+        .edit-container { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+        .edit-input { flex: 1; min-width: 140px; }
+        .edit-input label { display: block; margin-bottom: 6px; color: #5d4037; font-weight: bold; font-size: 0.9rem; }
+        .edit-input input { width: 100%; padding: 10px; border: 1px solid #c9b99b; border-radius: 6px; background: #f9f5eb; }
+        .edit-buttons { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        
+        .word-pair-list { margin-top: 20px; border-top: 1px dashed #c9b99b; padding-top: 15px; max-height: 200px; overflow-y: auto; }
+        .word-pair-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f9f5eb; border-radius: 6px; margin-bottom: 8px; border: 1px solid #d4c8a5; }
+        .word-pair-text { font-size: 0.9rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .word-pair-text span:first-child { font-weight: bold; color: #8b5a2b; background: rgba(139, 90, 43, 0.1); padding: 2px 6px; border-radius: 4px; }
+        .delete-btn { background: #c62828; color: white; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        
+        /* 匹配成功高亮动画 */
+        .highlight { animation: highlight 1.5s; }
+        @keyframes highlight { 0% { background-color: #ffeb3b; } 100% { background-color: transparent; } }
+        
+        /* 图标占位 */
+        .icon { display: inline-block; width: 18px; height: 18px; background-size: contain; background-repeat: no-repeat; background-position: center; vertical-align: middle; margin-right: 4px; }
+        .list-icon { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%237d5d3b"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>'); }
+        .clock-icon { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%237d5d3b"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/><path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>'); }
+        .star-icon { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%237d5d3b"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>'); }
+    </style>
+</head>
+<body>
+    <div id="landscape-tips">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+            <path d="M16 1H8C6.34 1 5 2.34 5 4v16c0 1.66 1.34 3 3 3h8c1.66 0 3-1.34 3-3V4c0-1.66-1.34-3-3-3zm-2 20h-4v-1h4v1zm3-3H7V4h10v14z"/>
+        </svg>
+        <p>为了获得最佳答题体验，<br><br>请锁定旋转并<b>横屏</b>使用手机</p>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>文言实词虚词配对</h1>
+            <p class="subtitle">点击左侧字词，再点击右侧释义进行配对</p>
+        </header>
+        
+        <div class="game-info">
+            <div class="info-item">
+                <div class="info-label"><span class="icon list-icon"></span> 剩余</div>
+                <div class="info-value" id="remaining">12</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label"><span class="icon clock-icon"></span> 用时</div>
+                <div class="info-value" id="timer">00:00</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label"><span class="icon star-icon"></span> 得分</div>
+                <div class="info-value" id="score">0</div>
+            </div>
+        </div>
+        
+        <div class="game-area">
+            <div class="column">
+                <h2 class="column-title">文言字词</h2>
+                <div class="words-container" id="words-container">
+                    </div>
+            </div>
+            
+            <div class="column">
+                <h2 class="column-title">对应释义</h2>
+                <div class="meanings-container" id="meanings-container">
+                    </div>
+            </div>
+        </div>
+        
+        <div class="completion-message" id="completion-message">
+            恭喜你！已完成所有配对！
+        </div>
+        
+        <div class="controls">
+            <button id="reset-btn">重新开始</button>
+            <button id="show-edit-btn">编辑词库</button>
+        </div>
+        
+        <div class="edit-section" id="edit-section">
+            <h3>编辑词库</h3>
+            <div class="edit-container">
+                <div class="edit-input">
+                    <label>文言字词</label>
+                    <input type="text" id="word-input" placeholder="例如：之">
+                </div>
+                <div class="edit-input">
+                    <label>释义</label>
+                    <input type="text" id="meaning-input" placeholder="例如：的；往；代词">
+                </div>
+            </div>
+            <div class="edit-buttons">
+                <button id="add-btn">添加</button>
+                <button id="update-btn">更新游戏</button>
+                <button id="hide-edit-btn">收起</button>
+            </div>
+            <div class="word-pair-list" id="word-pair-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // 初始词库
+        let wordPairs = [
+            { word: "侍坐", meaning: "陪侍长者闲坐" },
+            { word: "以", meaning: "因为" },
+            { word: "而", meaning: "你们" },
+            { word: "居", meaning: "平日" },
+            { word: "不吾知", meaning: "不了解我" },
+            { word: "如（如或知尔）", meaning: "如果" },
+            { word: "何以", meaning: "用什么（指才能）" },
+            { word: "率尔", meaning: "轻率急忙的样子" },
+            { word: "千乘", meaning: "兵车千辆的诸侯国" },
+            { word: "摄", meaning: "夹处 夹在" },
+            { word: "加", meaning: "施加 指遭受侵略" },
+            { word: "因", meaning: "接着" },
+            { word: "比及", meaning: "等到" },
+            { word: "方（可使有勇…）", meaning: "道义 礼法" },
+            { word: "哂", meaning: "微笑" }
+        ];
+        
+        // 游戏状态变量
+        let selectedWord = null;
+        let selectedMeaning = null;
+        let matchedPairs = 0;
+        let totalPairs = wordPairs.length;
+        let score = 0;
+        let startTime = null;
+        let timerInterval = null;
+        
+        // DOM元素绑定
+        const wordsContainer = document.getElementById('words-container');
+        const meaningsContainer = document.getElementById('meanings-container');
+        const remainingEl = document.getElementById('remaining');
+        const timerEl = document.getElementById('timer');
+        const scoreEl = document.getElementById('score');
+        const resetBtn = document.getElementById('reset-btn');
+        const completionMessage = document.getElementById('completion-message');
+        
+        // 初始化游戏
+        function initGame() {
+            selectedWord = null;
+            selectedMeaning = null;
+            matchedPairs = 0;
+            score = 0;
+            clearInterval(timerInterval);
+            
+            remainingEl.textContent = totalPairs;
+            scoreEl.textContent = score;
+            timerEl.textContent = "00:00";
+            completionMessage.style.display = "none";
+            
+            wordsContainer.innerHTML = "";
+            meaningsContainer.innerHTML = "";
+            
+            // 打乱释义顺序
+            const shuffledMeanings = [...wordPairs].sort(() => Math.random() - 0.5);
+            
+            // 渲染DOM
+            wordPairs.forEach((pair, index) => {
+                const wordEl = document.createElement('div');
+                wordEl.className = 'word-item';
+                wordEl.textContent = pair.word;
+                wordEl.dataset.id = index;
+                wordsContainer.appendChild(wordEl);
+                wordEl.addEventListener('click', () => handleWordClick(wordEl, index));
+            });
+            
+            shuffledMeanings.forEach((pair, index) => {
+                const meaningEl = document.createElement('div');
+                meaningEl.className = 'meaning-item';
+                meaningEl.textContent = pair.meaning;
+                meaningEl.dataset.id = wordPairs.findIndex(p => p.word === pair.word);
+                meaningsContainer.appendChild(meaningEl);
+                meaningEl.addEventListener('click', () => handleMeaningClick(meaningEl));
+            });
+            
+            startTime = new Date();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+        
+        function handleWordClick(wordEl, id) {
+            if (wordEl.classList.contains('matched')) return;
+            document.querySelectorAll('.word-item.selected').forEach(el => el.classList.remove('selected'));
+            wordEl.classList.add('selected');
+            selectedWord = { element: wordEl, id: id };
+            if (selectedMeaning) checkMatch();
+        }
+        
+        function handleMeaningClick(meaningEl) {
+            if (meaningEl.classList.contains('matched')) return;
+            document.querySelectorAll('.meaning-item.selected').forEach(el => el.classList.remove('selected'));
+            meaningEl.classList.add('selected');
+            selectedMeaning = meaningEl;
+            if (selectedWord) checkMatch();
+        }
+        
+        function checkMatch() {
+            if (selectedWord && selectedMeaning) {
+                if (parseInt(selectedMeaning.dataset.id) === selectedWord.id) {
+                    // 匹配成功逻辑
+                    setTimeout(() => {
+                        selectedWord.element.classList.add('matched');
+                        selectedMeaning.classList.add('matched');
+                        
+                        matchedPairs++;
+                        score += 10;
+                        remainingEl.textContent = totalPairs - matchedPairs;
+                        scoreEl.textContent = score;
+
+                        // ========== 核心特效：丝滑消除并上移 ==========
+                        [selectedWord.element, selectedMeaning].forEach(el => {
+                            el.style.transition = "all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)";
+                            el.style.opacity = "0";
+                            el.style.transform = "scale(0)";
+                            // 收缩空间占位
+                            el.style.margin = "0";
+                            el.style.padding = "0";
+                            el.style.width = "0";
+                            el.style.minWidth = "0";
+                            el.style.borderWidth = "0";
+                            el.style.fontSize = "0";
+                            
+                            // 等动画结束后彻底脱离文档流，触发flexbox重新排版
+                            setTimeout(() => {
+                                el.style.display = "none";
+                            }, 400);
+                        });
+                        // ============================================
+
+                        // 检查是否通关
+                        if (matchedPairs === totalPairs) {
+                            clearInterval(timerInterval);
+                            completionMessage.style.display = "block";
+                            score += 50; // 完赛奖励
+                            scoreEl.textContent = score;
+                        }
+
+                        selectedWord = null;
+                        selectedMeaning = null;
+                    }, 200);
+
+                } else {
+                    // 匹配失败逻辑
+                    setTimeout(() => {
+                        selectedWord.element.classList.remove('selected');
+                        selectedMeaning.classList.remove('selected');
+                        selectedWord = null;
+                        selectedMeaning = null;
+                    }, 400);
+                }
+            }
+        }
+
+        function updateTimer() {
+            const now = new Date();
+            const diff = Math.floor((now - startTime) / 1000);
+            const minutes = Math.floor(diff / 60).toString().padStart(2, '0');
+            const seconds = (diff % 60).toString().padStart(2, '0');
+            timerEl.textContent = `${minutes}:${seconds}`;
+        }
+        
+        // ----------------- 编辑词库逻辑 -----------------
+        const editSection = document.getElementById('edit-section');
+        const wordPairList = document.getElementById('word-pair-list');
+        const wordInput = document.getElementById('word-input');
+        const meaningInput = document.getElementById('meaning-input');
+
+        document.getElementById('show-edit-btn').addEventListener('click', () => {
+            editSection.style.display = "block";
+            renderWordPairList();
+        });
+        
+        document.getElementById('hide-edit-btn').addEventListener('click', () => {
+            editSection.style.display = "none";
+        });
+
+        document.getElementById('add-btn').addEventListener('click', () => {
+            const word = wordInput.value.trim();
+            const meaning = meaningInput.value.trim();
+            if (!word || !meaning) { alert("请输入完整！"); return; }
+            wordPairs.push({ word, meaning });
+            wordInput.value = ""; meaningInput.value = "";
+            renderWordPairList();
+        });
+
+        document.getElementById('update-btn').addEventListener('click', () => {
+            totalPairs = wordPairs.length;
+            editSection.style.display = "none";
+            initGame();
+        });
+
+        function renderWordPairList() {
+            wordPairList.innerHTML = "";
+            wordPairs.forEach((pair, index) => {
+                const item = document.createElement('div');
+                item.className = 'word-pair-item';
+                item.innerHTML = `
+                    <div class="word-pair-text"><span>${pair.word}</span> <span>${pair.meaning}</span></div>
+                    <button class="delete-btn" data-index="${index}">删除</button>
+                `;
+                wordPairList.appendChild(item);
+            });
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    wordPairs.splice(parseInt(e.target.dataset.index), 1);
+                    renderWordPairList();
+                });
+            });
+        }
+        
+        resetBtn.addEventListener('click', initGame);
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>

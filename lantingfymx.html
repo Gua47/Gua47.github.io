@@ -34,9 +34,55 @@
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            min-height: 100vh;
         }
 
-        /* 顶部状态栏 */
+        /* ----- 首页界面 ----- */
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            margin-top: 40px;
+        }
+
+        .main-title {
+            font-size: 36px;
+            font-weight: normal;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+        }
+
+        .sub-title {
+            color: var(--text-muted);
+            margin-bottom: 50px;
+        }
+
+        .mode-btn {
+            background-color: transparent;
+            color: var(--accent-green);
+            border: 2px solid var(--accent-green);
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 30px;
+            margin: 15px 0;
+            width: 80%;
+            max-width: 300px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .mode-btn:active {
+            background-color: rgba(106, 139, 71, 0.1);
+        }
+
+        /* ----- 游戏界面 ----- */
+        #game-screen {
+            display: none; /* 默认隐藏 */
+        }
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -44,6 +90,15 @@
             color: var(--text-muted);
             margin-bottom: 20px;
             margin-top: 10px;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-family: inherit;
+            cursor: pointer;
+            padding: 0;
         }
 
         .title-area {
@@ -64,7 +119,6 @@
             margin: 0;
         }
 
-        /* 关卡提示 */
         #level-badge {
             text-align: center;
             font-size: 16px;
@@ -74,7 +128,6 @@
             letter-spacing: 1px;
         }
 
-        /* 翻译展示区 */
         .translation-box {
             font-size: 18px;
             line-height: 1.6;
@@ -84,7 +137,6 @@
             min-height: 50px;
         }
 
-        /* 填空展示区（模拟输入框的灰色背景底板） */
         .blanks-container {
             display: flex;
             flex-wrap: wrap;
@@ -133,7 +185,6 @@
             margin: 0 2px;
         }
 
-        /* 真正接收输入的文本框（彻底隐藏，加入了防联想属性） */
         #user-input {
             position: absolute;
             left: -9999px;
@@ -142,7 +193,6 @@
             height: 1px;
         }
 
-        /* 底部导航按钮 */
         .nav-buttons {
             display: flex;
             justify-content: space-between;
@@ -167,10 +217,11 @@
             cursor: not-allowed;
         }
 
-        /* 总结界面 */
+        /* ----- 总结界面 ----- */
         #summary-screen {
-            display: none;
+            display: none; /* 默认隐藏 */
             text-align: center;
+            padding-bottom: 40px;
         }
         
         #evaluation-text {
@@ -209,10 +260,22 @@
 <body>
 
 <div id="app">
+    <!-- 首页选择界面 -->
+    <div id="start-screen">
+        <h1 class="main-title">兰亭集序</h1>
+        <p class="sub-title">默写通关挑战</p>
+        <!-- 提示学生切换手写键盘 -->
+        <p style="font-size: 14px; color: #d9534f; margin-bottom: 20px; text-align: center; padding: 0 20px;">
+            提示：为加深记忆，建议将手机输入法切换为<strong>“手写模式”</strong>进行练习。
+        </p>
+        <button class="mode-btn" onclick="initGame(1)">顺序全文默写</button>
+        <button class="mode-btn" onclick="initGame(2)">随机乱序挑战</button>
+    </div>
+
     <!-- 练习界面 -->
     <div id="game-screen">
         <div class="header">
-            <span id="mode-text">← 目录</span>
+            <button class="header-btn" onclick="returnToStart()">← 返回首页</button>
             <span id="progress-text">进度：1/8</span>
         </div>
 
@@ -227,7 +290,7 @@
 
         <div class="blanks-container" id="blanks" onclick="focusInput()"></div>
 
-        <!-- 拦截联想功能 -->
+        <!-- 拦截联想功能，同时兼容手写输入 -->
         <input type="text" id="user-input" 
                autocomplete="off" 
                autocorrect="off" 
@@ -245,93 +308,35 @@
     <div id="summary-screen">
         <div class="title-area">
             <h1 id="summary-title">练习完成</h1>
-            <!-- 评语展示区 -->
             <p id="evaluation-text"></p>
             <p id="summary-subtitle">以下是本次错误超过3次的重点突破句子：</p>
         </div>
         <div id="mistakes-list"></div>
-        <button class="primary-btn" onclick="startNextSession()">再练一次</button>
+        <button class="primary-btn" onclick="returnToStart()">返回首页</button>
     </div>
 </div>
 
 <script>
     const fullData = [
-    { orig: "永和九年，岁在癸丑，", trans: "永和九年，时在癸丑之年，" },
-    { orig: "暮春之初，", trans: "三月上旬，" },
-    { orig: "会于会稽山阴之兰亭，", trans: "我们会集在会稽郡山阴城的兰亭，" },
-    { orig: "修禊事也。", trans: "为了做禊礼这件事。" },
-    { orig: "群贤毕至，", trans: "诸多贤士能人都汇聚到这里，" },
-    { orig: "少长咸集。", trans: "年长、年少者都聚集在这里。" },
-    { orig: "此地有崇山峻岭，", trans: "兰亭这个地方有高峻的山峰，" },
-    { orig: "茂林修竹；", trans: "茂盛高密的树林和竹丛；" },
-    { orig: "又有清流激湍，", trans: "又有清澈激荡的水流，" },
-    { orig: "映带左右，", trans: "在亭子的左右辉映环绕，" },
-    { orig: "引以为流觞曲水，", trans: "我们把水引来作为漂传酒杯的环形渠水，" },
-    { orig: "列坐其次。", trans: "排列坐在曲水旁边，" },
-    { orig: "虽无丝竹管弦之盛，", trans: "虽然没有管弦齐奏的盛况，" },
-    { orig: "一觞一咏，", trans: "但喝着酒作着诗，" },
-    { orig: "亦足以畅叙幽情。", trans: "也足够来畅快表达幽深内藏的感情了。" },
-    { orig: "是日也，", trans: "这一天，" },
-    { orig: "天朗气清，", trans: "天气晴朗，" },
-    { orig: "惠风和畅。", trans: "和风习习，" },
-    { orig: "仰观宇宙之大，", trans: "抬头纵观广阔的天空，" },
-    { orig: "俯察品类之盛，", trans: "俯看观察大地上繁多的万物，" },
-    { orig: "所以游目骋怀，", trans: "用来舒展眼力，开阔胸怀，" },
-    { orig: "足以极视听之娱，", trans: "足够来极尽视听的欢娱，" },
-    { orig: "信可乐也。", trans: "实在很快乐。" },
-    { orig: "夫人之相与，", trans: "人与人相互交往，" },
-    { orig: "俯仰一世，", trans: "很快便度过一生，" },
-    { orig: "或取诸怀抱，", trans: "有的人在室内畅谈自己的胸怀抱负；" },
-    { orig: "悟言一室之内；", trans: "有的人在室内畅谈自己的胸怀抱负；" },
-    { orig: "或因寄所托，", trans: "有的人就着自己所爱好的事物，寄托自己的情怀，" },
-    { orig: "放浪形骸之外。", trans: "不受约束，放纵无羁的生活。" },
-    { orig: "虽趣舍万殊，", trans: "虽然各有各的爱好，" },
-    { orig: "静躁不同，", trans: "安静与躁动各不相同，" },
-    { orig: "当其欣于所遇，", trans: "但当他们对所接触的事物感到高兴时，" },
-    { orig: "暂得于己，", trans: "一时感到自得，" },
-    { orig: "快然自足，", trans: "感到高兴和满足，" },
-    { orig: "不知老之将至。", trans: "不知道衰老将要到来。" },
-    { orig: "及其所之既倦，", trans: "等到对于自己所喜爱的事物感到厌倦，" },
-    { orig: "情随事迁，", trans: "心情随着当前的境况而变化，" },
-    { orig: "感慨系之矣。", trans: "感慨随之产生了。" },
-    { orig: "向之所欣，", trans: "过去所喜欢的东西，" },
-    { orig: "俯仰之间，", trans: "转瞬间，" },
-    { orig: "已为陈迹，", trans: "已经成为旧迹，" },
-    { orig: "犹不能不以之兴怀。", trans: "尚且不能不因为它引发心中的感触。" },
-    { orig: "况修短随化，", trans: "况且寿命长短，听凭造化，" },
-    { orig: "终期于尽。", trans: "最后归结于消灭。" },
-    { orig: "古人云：“死生亦大矣。”", trans: "古人说：“死生毕竟是件大事啊。”" },
-    { orig: "岂不痛哉！", trans: "怎么能不让人悲痛呢？" },
-    { orig: "每览昔人兴感之由，", trans: "每当我看到前人兴怀感慨的原因，" },
-    { orig: "若合一契，", trans: "与我所感叹的好像符契一样相合，" },
-    { orig: "未尝不临文嗟悼，", trans: "没有不面对着他们的文章而嗟叹感伤的，" },
-    { orig: "不能喻之于怀。", trans: "在心里又不能清楚地说明。" },
-    { orig: "固知一死生为虚诞，", trans: "本来知道把生死等同的说法是不真实的，" },
-    { orig: "齐彭殇为妄作。", trans: "把长寿和短命等同起来的说法是妄造的。" },
-    { orig: "后之视今，", trans: "后人看待今人，" },
-    { orig: "亦犹今之视昔，", trans: "也就像今人看待前人。" },
-    { orig: "悲夫！", trans: "可悲呀！" },
-    { orig: "故列叙时人，", trans: "所以一个一个记下当时与会的人，" },
-    { orig: "录其所述，", trans: "录下他们所作的诗篇。" },
-    { orig: "虽世殊事异，", trans: "纵使时代变了，事情不同了，" },
-    { orig: "所以兴怀，", trans: "但触发人们情怀的原因，" },
-    { orig: "其致一也。", trans: "他们的思想情趣是一样的。" },
-    { orig: "后之览者，", trans: "后世的读者，" },
-    { orig: "亦将有感于斯文。", trans: "也将对这次集会的诗文有所感慨。" }
+        { orig: "永和九年，岁在癸丑，", trans: "永和九年，时在癸丑之年，" },
+        { orig: "暮春之初，", trans: "三月上旬，" },
+        { orig: "会于会稽山阴之兰亭，", trans: "我们会集在会稽郡山阴县的兰亭，" },
+        { orig: "修禊事也。", trans: "是为了做修禊的法事。" },
+        { orig: "群贤毕至，少长咸集。", trans: "众多贤才都汇聚在这里，年长的年少的都聚集在一起。" },
+        { orig: "此地有崇山峻岭，茂林修竹；", trans: "这里有高峻的山岭，茂密的树林和高高的竹子；" },
+        { orig: "又有清流激湍，映带左右，", trans: "又有清澈湍急的水流，如同飘带一般环绕在亭子的四周，" },
+        { orig: "引以为流觞曲水，列坐其次。", trans: "引（这些流水）作为浮动酒杯的弯曲水道，大家依次坐在水边。" }
     ];
 
     let currentData = []; 
     let currentIndex = 0;
     let highestIndex = 0; 
     let typedProgress = []; 
-    
     let currentLevel = 1; 
 
-    // 错题统计机制
+    // 错题与作弊统计
     let mistakeCounter = {}; 
     let currentSessionMistakes = new Set(); 
-    
-    // 新增：自动输入检测计数器（贯穿整个文章练习）
     let autoInputCount = 0; 
 
     const transEl = document.getElementById('translation');
@@ -364,22 +369,38 @@
         }
     }
 
-    function initGame(level = 1) {
-        document.getElementById('game-screen').style.display = 'block';
+    // 页面跳转逻辑
+    function returnToStart() {
+        document.getElementById('start-screen').style.display = 'flex';
+        document.getElementById('game-screen').style.display = 'none';
         document.getElementById('summary-screen').style.display = 'none';
+        
+        // 重置所有状态
+        mistakeCounter = {};
+        currentSessionMistakes.clear();
+        autoInputCount = 0;
+    }
+
+    function initGame(level) {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('summary-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
         
         currentLevel = level;
         currentIndex = 0;
         highestIndex = 0;
+        autoInputCount = 0;
+        mistakeCounter = {};
+        currentSessionMistakes.clear();
         typedProgress = new Array(fullData.length).fill("");
 
         let baseData = fullData.map((item, index) => ({...item, originalIndex: index}));
 
         if (currentLevel === 1) {
-            levelBadgeEl.innerText = "第一关：全文顺序默写";
+            levelBadgeEl.innerText = "当前模式：顺序全文默写";
             currentData = baseData;
         } else if (currentLevel === 2) {
-            levelBadgeEl.innerText = "第二关：随机乱序挑战";
+            levelBadgeEl.innerText = "当前模式：随机乱序挑战";
             currentData = shuffleArray(baseData);
         }
 
@@ -441,7 +462,7 @@
         if (currentIndex < highestIndex) {
             btnNext.disabled = false;
             if (currentIndex === currentData.length - 1) {
-                btnNext.innerText = currentLevel === 1 ? "进入第二关" : "查看总结";
+                btnNext.innerText = "查看总结";
             } else {
                 btnNext.innerText = "下一句";
             }
@@ -463,16 +484,11 @@
             currentIndex++;
             loadSentence();
         } else if (currentIndex === currentData.length - 1 && highestIndex === currentData.length) {
-            if (currentLevel === 1) {
-                alert("太棒了！第一关顺序背诵已完成，即将进入第二关（乱序挑战）。");
-                initGame(2); 
-            } else {
-                showSummary(); 
-            }
+            showSummary(); 
         }
     }
 
-    // 输入法逻辑
+    // 输入法逻辑（兼容手写）
     inputEl.addEventListener('compositionstart', () => { isComposing = true; });
     inputEl.addEventListener('compositionend', () => { 
         isComposing = false; 
@@ -491,13 +507,12 @@
         const previousLen = typedProgress[currentIndex].length;
         
         if (origPureChars.startsWith(rawVal)) {
-            // 新增逻辑：检测是否自动填入了3个字及以上
+            // 检测是否自动填入了3个字及以上（手写通常是每次1个字，不会触发此惩罚）
             const newLen = rawVal.length;
             if (newLen > previousLen && (newLen - previousLen) >= 3) {
                 autoInputCount++;
             }
 
-            // 更新输入进度
             typedProgress[currentIndex] = rawVal;
             renderBlanks(rawVal, false);
             
@@ -516,7 +531,6 @@
             if (mistakeCounter[origIndex] >= 3) {
                 currentSessionMistakes.add(origIndex);
             }
-            
             // 强制撤回
             inputEl.value = typedProgress[currentIndex];
         }
@@ -530,10 +544,10 @@
         // 渲染评语
         if (autoInputCount > 8) {
             evalEl.innerText = `千里之堤，溃于蚁穴。你用了 ${autoInputCount} 次自动输入。`;
-            evalEl.style.color = "#d9534f"; // 警示红
+            evalEl.style.color = "#d9534f"; 
         } else {
             evalEl.innerText = "千里之行，始于足下。一次次键盘的敲击，是你的努力可见。";
-            evalEl.style.color = "var(--accent-green)"; // 鼓励绿
+            evalEl.style.color = "var(--accent-green)"; 
         }
 
         const listEl = document.getElementById('mistakes-list');
@@ -550,16 +564,8 @@
                 listEl.appendChild(div);
             });
         } else {
-            document.getElementById('summary-subtitle').innerText = "非常完美！两关全部通关，没有任何句子错误超过3次。";
+            document.getElementById('summary-subtitle').innerText = "非常完美！本模式全部通关，没有任何句子错误超过3次。";
         }
-    }
-
-    function startNextSession() {
-        // 重置所有数据重新开始
-        mistakeCounter = {};
-        currentSessionMistakes.clear();
-        autoInputCount = 0; // 重置自动输入次数
-        initGame(1);
     }
 
     document.addEventListener('click', (e) => {
@@ -570,8 +576,6 @@
             }
         }
     });
-
-    window.onload = () => initGame(1);
 
 </script>
 </body>

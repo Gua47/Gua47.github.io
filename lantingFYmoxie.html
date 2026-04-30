@@ -12,6 +12,7 @@
             --text-muted: #888888;
             --accent-green: #6A8B47;
             --line-color: #D3D3C8;
+            --box-bg: #EAEAE0;
         }
 
         body {
@@ -41,13 +42,13 @@
             justify-content: space-between;
             font-size: 14px;
             color: var(--text-muted);
-            margin-bottom: 40px;
+            margin-bottom: 20px;
             margin-top: 10px;
         }
 
         .title-area {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
 
         .title-area h1 {
@@ -63,74 +64,89 @@
             margin: 0;
         }
 
+        /* 关卡提示 */
+        #level-badge {
+            text-align: center;
+            font-size: 16px;
+            color: var(--accent-green);
+            margin-bottom: 20px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
         /* 翻译展示区 */
         .translation-box {
             font-size: 18px;
             line-height: 1.6;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             color: var(--text-main);
             text-align: center;
-            min-height: 60px;
+            min-height: 50px;
         }
 
-        /* 填空展示区 */
+        /* 填空展示区（模拟输入框的灰色背景底板） */
         .blanks-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 5px;
+            align-items: center;
+            gap: 2px;
             font-size: 24px;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             line-height: 2;
+            background-color: var(--box-bg);
+            border: 1px solid var(--line-color);
+            border-radius: 8px;
+            padding: 20px 10px;
+            min-height: 40px;
+            cursor: text; 
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .char-box {
             display: inline-block;
             min-width: 24px;
             text-align: center;
+            color: var(--text-muted); 
         }
 
         .char-blank {
-            border-bottom: 2px solid var(--line-color);
-            color: var(--accent-green);
             min-width: 24px;
             height: 30px;
             display: inline-block;
+            border-bottom: 1px solid var(--text-muted); 
+            margin: 0 2px;
+        }
+
+        .char-blank.active {
+            border-bottom: 2px solid var(--accent-green);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { border-color: transparent; }
+            50% { border-color: var(--accent-green); }
         }
 
         .punctuation {
-            color: var(--text-main);
-        }
-
-        /* 输入框 */
-        #user-input {
-            width: 100%;
-            padding: 15px;
-            font-size: 18px;
-            border: 1px solid var(--line-color);
-            border-radius: 8px;
-            background-color: transparent;
-            text-align: center;
-            outline: none;
-            color: var(--text-main);
-            font-family: inherit;
-        }
-        
-        #user-input:focus {
-            border-color: var(--accent-green);
-        }
-        
-        #user-input:disabled {
-            background-color: rgba(0,0,0,0.03);
             color: var(--text-muted);
-            border-color: var(--line-color);
+            margin: 0 2px;
         }
 
-        /* 底部导航按钮 (新增功能) */
+        /* 真正接收输入的文本框（彻底隐藏，加入了防联想属性） */
+        #user-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+        }
+
+        /* 底部导航按钮 */
         .nav-buttons {
             display: flex;
             justify-content: space-between;
-            margin-top: 20px;
+            margin-top: 10px;
             width: 100%;
         }
 
@@ -149,13 +165,22 @@
             color: var(--line-color);
             border-color: var(--line-color);
             cursor: not-allowed;
-            background-color: transparent;
         }
 
         /* 总结界面 */
         #summary-screen {
             display: none;
             text-align: center;
+        }
+        
+        #evaluation-text {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #fff;
+            border: 1px dashed var(--line-color);
         }
 
         .mistake-item {
@@ -184,25 +209,32 @@
 <body>
 
 <div id="app">
-    <div class="header">
-        <span id="mode-text">← 目录</span>
-        <span id="progress-text">正在练习：第1句</span>
-    </div>
-
     <!-- 练习界面 -->
     <div id="game-screen">
+        <div class="header">
+            <span id="mode-text">← 目录</span>
+            <span id="progress-text">进度：1/8</span>
+        </div>
+
         <div class="title-area">
             <h1>兰亭集序</h1>
             <p>王羲之〔魏晋〕</p>
         </div>
+        
+        <div id="level-badge">第一关：通读背诵</div>
 
         <div class="translation-box" id="translation"></div>
 
-        <div class="blanks-container" id="blanks"></div>
+        <div class="blanks-container" id="blanks" onclick="focusInput()"></div>
 
-        <input type="text" id="user-input" placeholder="请在此输入汉字" autocomplete="off">
+        <!-- 拦截联想功能 -->
+        <input type="text" id="user-input" 
+               autocomplete="off" 
+               autocorrect="off" 
+               autocapitalize="off" 
+               spellcheck="false" 
+               data-form-type="other">
 
-        <!-- 新增的前后翻页导航 -->
         <div class="nav-buttons">
             <button id="btn-prev" class="nav-btn" onclick="goPrev()">上一句</button>
             <button id="btn-next" class="nav-btn" onclick="goNext()">下一句</button>
@@ -213,10 +245,12 @@
     <div id="summary-screen">
         <div class="title-area">
             <h1 id="summary-title">练习完成</h1>
-            <p id="summary-subtitle">以下是本次练习中出错的句子</p>
+            <!-- 评语展示区 -->
+            <p id="evaluation-text"></p>
+            <p id="summary-subtitle">以下是本次错误超过3次的重点突破句子：</p>
         </div>
         <div id="mistakes-list"></div>
-        <button class="primary-btn" onclick="startNextSession()">完成并返回</button>
+        <button class="primary-btn" onclick="startNextSession()">再练一次</button>
     </div>
 </div>
 
@@ -234,74 +268,89 @@
 
     let currentData = []; 
     let currentIndex = 0;
-    let highestIndex = 0; // 记录当前解锁到的最高题目索引
-    let typedProgress = []; // 记录每道题用户已经打出的正确进度
+    let highestIndex = 0; 
+    let typedProgress = []; 
     
-    let currentSessionMistakes = new Set();
-    let savedMistakes = JSON.parse(localStorage.getItem('lanting_mistakes')) || [];
+    let currentLevel = 1; 
+
+    // 错题统计机制
+    let mistakeCounter = {}; 
+    let currentSessionMistakes = new Set(); 
+    
+    // 新增：自动输入检测计数器（贯穿整个文章练习）
+    let autoInputCount = 0; 
 
     const transEl = document.getElementById('translation');
     const blanksEl = document.getElementById('blanks');
     const inputEl = document.getElementById('user-input');
     const progressEl = document.getElementById('progress-text');
-    const modeEl = document.getElementById('mode-text');
+    const levelBadgeEl = document.getElementById('level-badge');
     const btnPrev = document.getElementById('btn-prev');
     const btnNext = document.getElementById('btn-next');
+    const evalEl = document.getElementById('evaluation-text');
 
-    // 中文输入法状态标记
     let isComposing = false; 
 
     function getPureChars(str) {
         return str.replace(/[，。；？！、\s]/g, '');
     }
 
-    function initGame() {
+    function shuffleArray(array) {
+        let newArr = [...array];
+        for (let i = newArr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+        }
+        return newArr;
+    }
+
+    function focusInput() {
+        if (currentIndex >= highestIndex) {
+            inputEl.focus();
+        }
+    }
+
+    function initGame(level = 1) {
         document.getElementById('game-screen').style.display = 'block';
         document.getElementById('summary-screen').style.display = 'none';
-        currentSessionMistakes.clear();
+        
+        currentLevel = level;
         currentIndex = 0;
         highestIndex = 0;
+        typedProgress = new Array(fullData.length).fill("");
 
-        if (savedMistakes.length > 0) {
-            modeEl.innerText = "复习模式 (上次错题)";
-            currentData = savedMistakes.map(index => ({...fullData[index], originalIndex: index}));
-        } else {
-            modeEl.innerText = "全文练习";
-            currentData = fullData.map((item, index) => ({...item, originalIndex: index}));
+        let baseData = fullData.map((item, index) => ({...item, originalIndex: index}));
+
+        if (currentLevel === 1) {
+            levelBadgeEl.innerText = "第一关：全文顺序默写";
+            currentData = baseData;
+        } else if (currentLevel === 2) {
+            levelBadgeEl.innerText = "第二关：随机乱序挑战";
+            currentData = shuffleArray(baseData);
         }
 
-        // 初始化进度数组
-        typedProgress = new Array(currentData.length).fill("");
-        
         loadSentence();
     }
 
     function loadSentence() {
         const currentItem = currentData[currentIndex];
         transEl.innerText = currentItem.trans;
-        progressEl.innerText = `当前进度：${currentIndex + 1} / ${currentData.length}`;
+        progressEl.innerText = `进度：${currentIndex + 1}/${currentData.length}`;
         
-        // 核心逻辑：判断当前题目是“回看模式”还是“正在练习模式”
         if (currentIndex < highestIndex) {
-            // 回看模式：已完成的题，锁定输入框，显示完整原文
             const origPure = getPureChars(currentItem.orig);
             inputEl.value = origPure;
-            inputEl.disabled = true;
-            inputEl.placeholder = "已完成";
-            renderBlanks(origPure);
+            renderBlanks(origPure, true); 
         } else {
-            // 练习模式：未完成的题，开放输入框，恢复之前的正确进度
             inputEl.value = typedProgress[currentIndex];
-            inputEl.disabled = false;
-            inputEl.placeholder = "请在此输入汉字";
-            renderBlanks(typedProgress[currentIndex]);
-            setTimeout(() => inputEl.focus(), 100);
+            renderBlanks(typedProgress[currentIndex], false);
+            setTimeout(() => focusInput(), 100);
         }
 
         updateNavButtons();
     }
 
-    function renderBlanks(typedPureChars) {
+    function renderBlanks(typedPureChars, isCompleted) {
         const origText = currentData[currentIndex].orig;
         blanksEl.innerHTML = "";
         let charIndex = 0; 
@@ -316,11 +365,16 @@
                 span.innerText = char;
             } else {
                 span.className = "char-box char-blank";
+                
                 if (charIndex < typedPureChars.length) {
                     span.innerText = typedPureChars[charIndex];
-                    span.style.borderBottom = "none"; 
+                    span.style.borderBottom = "none";
+                    span.style.color = "#8A8A80"; 
                 } else {
                     span.innerText = "";
+                    if (!isCompleted && charIndex === typedPureChars.length) {
+                        span.classList.add('active');
+                    }
                 }
                 charIndex++;
             }
@@ -328,13 +382,15 @@
         }
     }
 
-    // 导航按钮状态更新
     function updateNavButtons() {
         btnPrev.disabled = (currentIndex === 0);
-        
         if (currentIndex < highestIndex) {
             btnNext.disabled = false;
-            btnNext.innerText = (currentIndex === currentData.length - 1) ? "查看总结" : "下一句";
+            if (currentIndex === currentData.length - 1) {
+                btnNext.innerText = currentLevel === 1 ? "进入第二关" : "查看总结";
+            } else {
+                btnNext.innerText = "下一句";
+            }
         } else {
             btnNext.disabled = true;
             btnNext.innerText = "下一句";
@@ -353,69 +409,85 @@
             currentIndex++;
             loadSentence();
         } else if (currentIndex === currentData.length - 1 && highestIndex === currentData.length) {
-            showSummary();
+            if (currentLevel === 1) {
+                alert("太棒了！第一关顺序背诵已完成，即将进入第二关（乱序挑战）。");
+                initGame(2); 
+            } else {
+                showSummary(); 
+            }
         }
     }
 
-    // ========== 输入法兼容与校验核心逻辑 ==========
-
-    inputEl.addEventListener('compositionstart', () => {
-        isComposing = true; // 用户开始打拼音
-    });
-
-    inputEl.addEventListener('compositionend', () => {
-        isComposing = false; // 用户选中汉字，拼音组合结束
+    // 输入法逻辑
+    inputEl.addEventListener('compositionstart', () => { isComposing = true; });
+    inputEl.addEventListener('compositionend', () => { 
+        isComposing = false; 
         handleInputValidation(); 
     });
-
-    inputEl.addEventListener('input', () => {
-        // 如果不在打拼音状态（比如直接复制粘贴、或者部分手机的默认输入行为），直接校验
-        if (!isComposing) {
-            handleInputValidation();
-        }
+    inputEl.addEventListener('input', () => { 
+        if (!isComposing) handleInputValidation(); 
     });
 
     function handleInputValidation() {
-        if (currentIndex < highestIndex) return; // 回看模式不处理输入
+        if (currentIndex < highestIndex) return; 
 
+        const origIndex = currentData[currentIndex].originalIndex;
         const origPureChars = getPureChars(currentData[currentIndex].orig);
         const rawVal = inputEl.value;
+        const previousLen = typedProgress[currentIndex].length;
         
-        // 校验：如果当前输入框里的文字，完全符合正确答案的前缀
         if (origPureChars.startsWith(rawVal)) {
+            // 新增逻辑：检测是否自动填入了3个字及以上
+            const newLen = rawVal.length;
+            if (newLen > previousLen && (newLen - previousLen) >= 3) {
+                autoInputCount++;
+            }
+
+            // 更新输入进度
             typedProgress[currentIndex] = rawVal;
-            renderBlanks(rawVal);
+            renderBlanks(rawVal, false);
             
-            // 判断这句是否全部打完
             if (rawVal === origPureChars) {
                 highestIndex = Math.max(highestIndex, currentIndex + 1);
-                inputEl.blur(); // 暂时收起键盘
+                inputEl.blur(); 
+                renderBlanks(rawVal, true); 
                 
                 setTimeout(() => {
                     goNext();
-                }, 500); 
+                }, 400); 
             }
         } else {
-            // 输入不匹配（打错了汉字）
-            currentSessionMistakes.add(currentData[currentIndex].originalIndex);
+            // 错误处理
+            mistakeCounter[origIndex] = (mistakeCounter[origIndex] || 0) + 1;
+            if (mistakeCounter[origIndex] >= 3) {
+                currentSessionMistakes.add(origIndex);
+            }
             
-            // 撤回输入框内容，恢复到上一次正确的进度
+            // 强制撤回
             inputEl.value = typedProgress[currentIndex];
         }
     }
 
-    // ========== 总结与复习逻辑 ==========
-
+    // 总结界面
     function showSummary() {
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('summary-screen').style.display = 'block';
         
+        // 渲染评语
+        if (autoInputCount > 8) {
+            evalEl.innerText = `千里之堤，溃于蚁穴。你用了 ${autoInputCount} 次自动输入。`;
+            evalEl.style.color = "#d9534f"; // 警示红
+        } else {
+            evalEl.innerText = "千里之行，始于足下。一次次键盘的敲击，是你的努力可见。";
+            evalEl.style.color = "var(--accent-green)"; // 鼓励绿
+        }
+
         const listEl = document.getElementById('mistakes-list');
         listEl.innerHTML = "";
         let mistakesArray = Array.from(currentSessionMistakes);
 
         if (mistakesArray.length > 0) {
-            document.getElementById('summary-subtitle').innerText = "以下是本次需要加强记忆的句子：";
+            document.getElementById('summary-subtitle').innerText = "以下是本次练习中错误达到或超过 3 次的句子，需要重点加强：";
             mistakesArray.forEach(index => {
                 const item = fullData[index];
                 const div = document.createElement('div');
@@ -423,19 +495,29 @@
                 div.innerHTML = `<strong>原文：</strong>${item.orig}<br><span style="color:#666; font-size:14px;"><strong>译文：</strong>${item.trans}</span>`;
                 listEl.appendChild(div);
             });
-            localStorage.setItem('lanting_mistakes', JSON.stringify(mistakesArray));
         } else {
-            document.getElementById('summary-subtitle').innerText = "太棒了！本次练习全对，没有错题。";
-            localStorage.removeItem('lanting_mistakes');
+            document.getElementById('summary-subtitle').innerText = "非常完美！两关全部通关，没有任何句子错误超过3次。";
         }
     }
 
     function startNextSession() {
-        savedMistakes = JSON.parse(localStorage.getItem('lanting_mistakes')) || [];
-        initGame();
+        // 重置所有数据重新开始
+        mistakeCounter = {};
+        currentSessionMistakes.clear();
+        autoInputCount = 0; // 重置自动输入次数
+        initGame(1);
     }
 
-    window.onload = initGame;
+    document.addEventListener('click', (e) => {
+        const gameScreen = document.getElementById('game-screen');
+        if (gameScreen.style.display !== 'none' && currentIndex < highestIndex) {
+            if (e.target.tagName !== 'BUTTON') {
+                focusInput();
+            }
+        }
+    });
+
+    window.onload = () => initGame(1);
 
 </script>
 </body>

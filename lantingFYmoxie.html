@@ -1,1 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>《兰亭集序》默写通关</title>
+    <style>
+        /* 颜色与字体设定 */
+        :root {
+            --bg-color: #F5F5EC;
+            --text-main: #333333;
+            --text-muted: #888888;
+            --accent-green: #6A8B47;
+            --line-color: #D3D3C8;
+        }
 
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: "STZhongsong", "SimSun", "Songti SC", serif; /* 传统宋体/仿宋更符合古文意境 */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部状态栏 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            margin-top: 10px;
+        }
+
+        .title-area {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .title-area h1 {
+            font-size: 28px;
+            font-weight: normal;
+            margin: 0 0 10px 0;
+            letter-spacing: 2px;
+        }
+
+        .title-area p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        /* 翻译展示区 */
+        .translation-box {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            color: var(--text-main);
+            text-align: center;
+            min-height: 60px;
+        }
+
+        /* 填空展示区 */
+        .blanks-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            font-size: 24px;
+            margin-bottom: 40px;
+            line-height: 2;
+        }
+
+        .char-box {
+            display: inline-block;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .char-blank {
+            border-bottom: 2px solid var(--line-color);
+            color: var(--accent-green);
+            min-width: 24px;
+            height: 30px;
+            display: inline-block;
+        }
+
+        .punctuation {
+            color: var(--text-main);
+        }
+
+        /* 隐藏但可聚焦的输入框，用于唤起手机键盘 */
+        #user-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 1px solid var(--line-color);
+            border-radius: 8px;
+            background-color: transparent;
+            text-align: center;
+            outline: none;
+            color: var(--text-main);
+            font-family: inherit;
+        }
+        
+        #user-input:focus {
+            border-color: var(--accent-green);
+        }
+
+        /* 总结界面 */
+        #summary-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .mistake-item {
+            text-align: left;
+            background: rgba(106, 139, 71, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: var(--accent-green);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            margin-top: 20px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div class="header">
+        <span id="mode-text">← 目录</span>
+        <span id="progress-text">正在练习：第1句</span>
+    </div>
+
+    <!-- 练习界面 -->
+    <div id="game-screen">
+        <div class="title-area">
+            <h1>兰亭集序</h1>
+            <p>王羲之〔魏晋〕</p>
+        </div>
+
+        <div class="translation-box" id="translation">
+            <!-- 翻译加载在这里 -->
+        </div>
+
+        <div class="blanks-container" id="blanks">
+            <!-- 横线和标点加载在这里 -->
+        </div>
+
+        <input type="text" id="user-input" placeholder="请在此输入汉字（无需输入标点）" autocomplete="off">
+    </div>
+
+    <!-- 总结界面 -->
+    <div id="summary-screen">
+        <div class="title-area">
+            <h1 id="summary-title">练习完成</h1>
+            <p id="summary-subtitle">以下是本次练习中出错的句子</p>
+        </div>
+        <div id="mistakes-list"></div>
+        <button onclick="startNextSession()">完成并返回</button>
+    </div>
+</div>
+
+<script>
+    // 题库数据（可在此处继续添加剩余的句子）
+    const fullData = [
+        { orig: "永和九年，岁在癸丑，", trans: "永和九年，时在癸丑之年，" },
+        { orig: "暮春之初，", trans: "三月上旬，" },
+        { orig: "会于会稽山阴之兰亭，", trans: "我们会集在会稽郡山阴县的兰亭，" },
+        { orig: "修禊事也。", trans: "是为了做修禊的法事。" },
+        { orig: "群贤毕至，少长咸集。", trans: "众多贤才都汇聚在这里，年长的年少的都聚集在一起。" },
+        { orig: "此地有崇山峻岭，茂林修竹；", trans: "这里有高峻的山岭，茂密的树林和高高的竹子；" },
+        { orig: "又有清流激湍，映带左右，", trans: "又有清澈湍急的水流，如同飘带一般环绕在亭子的四周，" },
+        { orig: "引以为流觞曲水，列坐其次。", trans: "引（这些流水）作为浮动酒杯的弯曲水道，大家依次坐在水边。" }
+    ];
+
+    let currentData = []; // 当前需要练习的数据（可能是全集，也可能是错题集）
+    let currentIndex = 0;
+    let isReviewMode = false;
+    
+    let currentSessionMistakes = new Set(); // 本次练习产生的错题索引（针对 fullData 的索引）
+    let savedMistakes = JSON.parse(localStorage.getItem('lanting_mistakes')) || [];
+
+    const transEl = document.getElementById('translation');
+    const blanksEl = document.getElementById('blanks');
+    const inputEl = document.getElementById('user-input');
+    const progressEl = document.getElementById('progress-text');
+    const modeEl = document.getElementById('mode-text');
+
+    // 提取纯汉字，用于比对
+    function getPureChars(str) {
+        return str.replace(/[，。；？！、\s]/g, '');
+    }
+
+    // 初始化游戏
+    function initGame() {
+        document.getElementById('game-screen').style.display = 'block';
+        document.getElementById('summary-screen').style.display = 'none';
+        currentSessionMistakes.clear();
+        currentIndex = 0;
+
+        if (savedMistakes.length > 0) {
+            isReviewMode = true;
+            modeEl.innerText = "复习模式 (上次错题)";
+            // 筛选出售错题集
+            currentData = savedMistakes.map(index => ({...fullData[index], originalIndex: index}));
+        } else {
+            isReviewMode = false;
+            modeEl.innerText = "全文练习";
+            currentData = fullData.map((item, index) => ({...item, originalIndex: index}));
+        }
+
+        inputEl.value = "";
+        loadSentence();
+    }
+
+    // 加载当前句子
+    function loadSentence() {
+        if (currentIndex >= currentData.length) {
+            showSummary();
+            return;
+        }
+
+        const currentItem = currentData[currentIndex];
+        transEl.innerText = currentItem.trans;
+        progressEl.innerText = `当前进度：${currentIndex + 1} / ${currentData.length}`;
+        inputEl.value = "";
+        renderBlanks("");
+        
+        // 自动聚焦输入框 (在手机端可能需要用户手动点击，但PC端有效)
+        setTimeout(() => inputEl.focus(), 100);
+    }
+
+    // 渲染横线和已输入的字
+    function renderBlanks(typedPureChars) {
+        const origText = currentData[currentIndex].orig;
+        blanksEl.innerHTML = "";
+        
+        let charIndex = 0; // 记录已渲染的汉字数量
+
+        for (let i = 0; i < origText.length; i++) {
+            const char = origText[i];
+            const isPunctuation = /[，。；？！、\s]/.test(char);
+
+            const span = document.createElement('span');
+            
+            if (isPunctuation) {
+                span.className = "char-box punctuation";
+                span.innerText = char;
+            } else {
+                span.className = "char-box char-blank";
+                // 如果用户已经输入到了这个位置
+                if (charIndex < typedPureChars.length) {
+                    span.innerText = typedPureChars[charIndex];
+                    span.style.borderBottom = "none"; // 有字了去掉下划线
+                } else {
+                    span.innerText = "";
+                }
+                charIndex++;
+            }
+            blanksEl.appendChild(span);
+        }
+    }
+
+    // 监听输入
+    inputEl.addEventListener('input', (e) => {
+        const typedText = e.target.value;
+        const currentItem = currentData[currentIndex];
+        const origPureChars = getPureChars(currentItem.orig);
+        
+        // 我们只取输入长度的部分进行前缀对比
+        const typedLength = typedText.length;
+        const expectedPrefix = origPureChars.substring(0, typedLength);
+
+        if (typedText === expectedPrefix) {
+            // 输入正确，更新界面
+            renderBlanks(typedText);
+
+            // 如果全部打完且正确
+            if (typedText === origPureChars) {
+                setTimeout(() => {
+                    currentIndex++;
+                    loadSentence();
+                }, 300); // 短暂延迟让学生看清完整的字
+            }
+        } else {
+            // 输入不正确（包含错字）
+            // 1. 不让错误的字显示出来（退回上一步正确的状态）
+            inputEl.value = typedText.substring(0, typedLength - 1);
+            
+            // 2. 记录错误：只要卡壳/打错，这句就算错题
+            currentSessionMistakes.add(currentItem.originalIndex);
+        }
+    });
+
+    // 结束与总结
+    function showSummary() {
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('summary-screen').style.display = 'block';
+        
+        const listEl = document.getElementById('mistakes-list');
+        listEl.innerHTML = "";
+
+        let mistakesArray = Array.from(currentSessionMistakes);
+
+        if (mistakesArray.length > 0) {
+            document.getElementById('summary-subtitle').innerText = "以下是本次需要加强记忆的句子：";
+            mistakesArray.forEach(index => {
+                const item = fullData[index];
+                const div = document.createElement('div');
+                div.className = "mistake-item";
+                div.innerHTML = `<strong>原文：</strong>${item.orig}<br><span style="color:#666; font-size:14px;"><strong>译文：</strong>${item.trans}</span>`;
+                listEl.appendChild(div);
+            });
+            // 保存错题供下次使用
+            localStorage.setItem('lanting_mistakes', JSON.stringify(mistakesArray));
+        } else {
+            document.getElementById('summary-subtitle').innerText = "太棒了！本次练习全对，没有错题。";
+            // 清空错题本
+            localStorage.removeItem('lanting_mistakes');
+        }
+    }
+
+    function startNextSession() {
+        // 重新获取一下本地存储的错题情况，并重新初始化
+        savedMistakes = JSON.parse(localStorage.getItem('lanting_mistakes')) || [];
+        initGame();
+    }
+
+    // 页面加载完毕后启动
+    window.onload = initGame;
+
+</script>
+</body>
+</html>

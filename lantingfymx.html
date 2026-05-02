@@ -564,45 +564,85 @@
         if (!isComposing) handleInputValidation(); 
     });
 
-    function handleInputValidation() {
+        function handleInputValidation() {
         if (currentIndex < highestIndex) return; 
 
         const origIndex = currentData[currentIndex].originalIndex;
         const origPureChars = getPureChars(currentData[currentIndex].orig);
         const rawVal = inputEl.value;
-        const previousLen = typedProgress[currentIndex].length;
+        const currentProgress = typedProgress[currentIndex];
         
+        let isValid = false;
+        let newProgress = currentProgress;
+
+        // 核心修复：兼容手写与拼音的双重判断逻辑
+        
+        // 情况1：拼音键盘（正常拼接了之前的内容，比如传进来的是 "永和"）
         if (origPureChars.startsWith(rawVal)) {
-            // 自动输入检测：单次增长大于3字
-            const newLen = rawVal.length;
+            // 只要不是按了删除键，就判定为正确
+            if (rawVal.length >= currentProgress.length) {
+                isValid = true;
+                newProgress = rawVal;
+            } else {
+                inputEl.value = currentProgress; // 忽略删除操作
+                return;
+            }
+        } 
+        // 情况2：手写键盘（丢失了前面的字，只传进来了新写的字，比如传进来的只有 "和"）
+        else {
+            const expectedRemainder = origPureChars.substring(currentProgress.length);
+            // 检查：新写进来的字，是不是紧接着该出现的字？
+            if (rawVal.length > 0 && expectedRemainder.startsWith(rawVal)) {
+                isValid = true;
+                newProgress = currentProgress + rawVal; // 手动把前面的进度拼接起来
+            }
+            // 情况3：极致兼容（只要键盘传进来的最后一个字是正确的，就算对）
+            else if (rawVal.length > 0 && rawVal.charAt(rawVal.length - 1) === origPureChars.charAt(currentProgress.length)) {
+                isValid = true;
+                newProgress = currentProgress + rawVal.charAt(rawVal.length - 1);
+            }
+        }
+
+        if (isValid) {
+            // 检测是否自动填入了3个字及以上（针对联想作弊检测）
+            const newLen = newProgress.length;
+            const previousLen = currentProgress.length;
             if (newLen > previousLen && (newLen - previousLen) >= 3) {
                 autoInputCount++;
             }
 
-            typedProgress[currentIndex] = rawVal;
-            renderBlanks(rawVal, false);
+            // 更新输入进度
+            typedProgress[currentIndex] = newProgress;
+            inputEl.value = newProgress; // 强制同步给底层输入框，防止手写键盘错乱
+            renderBlanks(newProgress, false);
             
-            if (rawVal === origPureChars) {
+            // 判断这句是否全部打完
+            if (newProgress === origPureChars) {
                 highestIndex = Math.max(highestIndex, currentIndex + 1);
+                
+                // 如果是最后一句，收起键盘
                 if (currentIndex === currentData.length - 1) {
-                inputEl.blur(); 
+                    inputEl.blur(); 
                 }
-                renderBlanks(rawVal, true); 
+                
+                renderBlanks(newProgress, true); 
                 
                 setTimeout(() => {
                     goNext();
                 }, 400); 
             }
         } else {
-            // 错误处理
+            // 错误处理（错 3 次判定为错题）
             mistakeCounter[origIndex] = (mistakeCounter[origIndex] || 0) + 1;
             if (mistakeCounter[origIndex] >= 3) {
                 currentSessionMistakes.add(origIndex);
             }
-            inputEl.value = typedProgress[currentIndex];
+            
+            // 强制撤回，恢复到正确进度
+            inputEl.value = currentProgress;
         }
     }
-
+    
     function showSummary() {
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('summary-screen').style.display = 'block';

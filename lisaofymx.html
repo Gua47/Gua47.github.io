@@ -1,1 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>《兰亭集序》默写通关</title>
+    <style>
+        /* 颜色与字体设定 */
+        :root {
+            --bg-color: #F5F5EC;
+            --text-main: #333333;
+            --text-muted: #888888;
+            --accent-green: #6A8B47;
+            --line-color: #D3D3C8;
+            --box-bg: #EAEAE0;
+        }
 
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: "STZhongsong", "SimSun", "Songti SC", serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* ----- 首页选择界面 ----- */
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            margin-top: 40px;
+            position: relative;
+        }
+
+        .back-to-main {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 16px;
+            transition: color 0.3s ease;
+        }
+        
+        .back-to-main:hover {
+            color: var(--accent-green);
+        }
+
+        .main-title {
+            font-size: 36px;
+            font-weight: normal;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+        }
+
+        .sub-title {
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        .mode-btn {
+            background-color: transparent;
+            color: var(--accent-green);
+            border: 2px solid var(--accent-green);
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 30px;
+            margin: 15px 0;
+            width: 80%;
+            max-width: 300px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .mode-btn:active {
+            background-color: rgba(106, 139, 71, 0.1);
+        }
+
+        /* ----- 游戏界面 ----- */
+        #game-screen {
+            display: none; 
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-family: inherit;
+            cursor: pointer;
+            padding: 0;
+            font-size: 14px;
+        }
+
+        .title-area {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title-area h1 {
+            font-size: 28px;
+            font-weight: normal;
+            margin: 0 0 10px 0;
+            letter-spacing: 2px;
+        }
+
+        .title-area p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        #level-badge {
+            text-align: center;
+            font-size: 16px;
+            color: var(--accent-green);
+            margin-bottom: 20px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .translation-box {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            text-align: center;
+            min-height: 50px;
+        }
+
+        .blanks-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+            font-size: 24px;
+            margin-bottom: 30px;
+            line-height: 2;
+            background-color: var(--box-bg);
+            border: 1px solid var(--line-color);
+            border-radius: 8px;
+            padding: 20px 10px;
+            min-height: 40px;
+            cursor: text; 
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .char-box {
+            display: inline-block;
+            min-width: 24px;
+            text-align: center;
+            color: var(--text-muted); 
+        }
+
+        .char-blank {
+            min-width: 24px;
+            height: 30px;
+            display: inline-block;
+            border-bottom: 1px solid var(--text-muted); 
+            margin: 0 2px;
+        }
+
+        .char-blank.active {
+            border-bottom: 2px solid var(--accent-green);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { border-color: transparent; }
+            50% { border-color: var(--accent-green); }
+        }
+
+        .punctuation {
+            color: var(--text-muted);
+            margin: 0 2px;
+        }
+
+        #user-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .nav-btn {
+            background-color: transparent;
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .nav-btn:disabled {
+            color: var(--line-color);
+            border-color: var(--line-color);
+            cursor: not-allowed;
+        }
+
+        /* ----- 总结界面 ----- */
+        #summary-screen {
+            display: none;
+            text-align: center;
+            padding-bottom: 40px;
+        }
+        
+        #evaluation-text {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #fff;
+            border: 1px dashed var(--line-color);
+        }
+
+        .mistake-item {
+            text-align: left;
+            background: rgba(106, 139, 71, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .primary-btn {
+            background-color: var(--accent-green);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            margin-top: 20px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="start-screen">
+        <a href="index.html" class="back-to-main">← 返回总目录</a>
+
+        <h1 class="main-title">兰亭集序</h1>
+        <p class="sub-title">默写通关挑战</p>
+        
+        <p style="font-size: 14px; color: #d9534f; margin-bottom: 20px; text-align: center; padding: 0 20px;">
+            提示：建议使用<strong>手写键盘</strong>练习以增强记忆。
+        </p>
+
+        <button class="mode-btn" onclick="initGame(1)">顺序全文默写</button>
+        <button class="mode-btn" onclick="initGame(2)">随机乱序挑战</button>
+    </div>
+
+    <div id="game-screen">
+        <div class="header">
+            <button class="header-btn" onclick="returnToStart()">← 返回模式选择</button>
+            <span id="progress-text">进度：1/8</span>
+        </div>
+
+        <div class="title-area">
+            <h1>兰亭集序</h1>
+            <p>王羲之〔魏晋〕</p>
+        </div>
+        
+        <div id="level-badge">当前模式：顺序全文默写</div>
+
+        <div class="translation-box" id="translation"></div>
+
+        <div class="blanks-container" id="blanks" onclick="focusInput()"></div>
+
+        <input type="text" id="user-input" 
+               autocomplete="off" 
+               autocorrect="off" 
+               autocapitalize="off" 
+               spellcheck="false" 
+               data-form-type="other">
+
+        <div class="nav-buttons">
+            <button id="btn-prev" class="nav-btn" onclick="goPrev()">上一句</button>
+            <button id="btn-next" class="nav-btn" onclick="goNext()">下一句</button>
+        </div>
+    </div>
+
+    <div id="summary-screen">
+        <div class="title-area">
+            <h1 id="summary-title">练习完成</h1>
+            <p id="evaluation-text"></p>
+            <p id="summary-subtitle">以下是本次错误超过3次的重点突破句子：</p>
+        </div>
+        <div id="mistakes-list"></div>
+        <button class="primary-btn" onclick="returnToStart()">返回首页</button>
+    </div>
+</div>
+
+<script>
+    const fullData = [
+    { orig: "帝高阳之苗裔兮，", trans: "我是古帝高阳氏的子孙，" },
+    { orig: "朕皇考曰伯庸。", trans: "我已去世的父亲字伯庸。" },
+    { orig: "摄提贞于孟陬兮，", trans: "岁星在寅那年的孟春月，" },
+    { orig: "惟庚寅吾以降。", trans: "正当庚寅日那天我降生。" },
+    { orig: "皇览揆余初度兮，", trans: "父亲仔细揣测我的生辰，" },
+    { orig: "肇锡余以嘉名。", trans: "于是赐给我相应的美名：" },
+    { orig: "名余曰正则兮，", trans: "父亲把我的名取为正则，" },
+    { orig: "字余曰灵均。", trans: "同时把我的字叫作灵均。" },
+    { orig: "纷吾既有此内美兮，", trans: "天赋给我很多良好素质，" },
+    { orig: "又重之以修能。", trans: "我不断加强自己的修养。" },
+    { orig: "扈江离与辟芷兮，", trans: "我把江离芷草披在肩上，" },
+    { orig: "纫秋兰以为佩。", trans: "把秋兰结成索佩挂身旁。" },
+    { orig: "汩余若将不及兮，", trans: "光阴似箭我好像跟不上，" },
+    { orig: "恐年岁之不吾与。", trans: "岁月不等待人令我心慌。" },
+    { orig: "朝搴阰之木兰兮，", trans: "早晨我在大坡采集木兰，" },
+    { orig: "夕揽洲之宿莽。", trans: "傍晚在小洲中摘取宿莽。" },
+    { orig: "日月忽其不淹兮，", trans: "时光迅速逝去不能久留，" },
+    { orig: "春与秋其代序。", trans: "四季更相代谢变化有常。" },
+    { orig: "惟草木之零落兮，", trans: "想到草木不断地在飘零凋谢，" },
+    { orig: "恐美人之迟暮。", trans: "不禁担忧美人（一说屈原自指，一说楚怀王）也会日益衰老。" },
+    { orig: "不抚壮而弃秽兮，", trans: "何不利用盛时扬弃秽政，" },
+    { orig: "何不改此度？", trans: "为何还不改变这些法度？" },
+    { orig: "乘骐骥以驰骋兮，", trans: "乘上千里马纵横驰骋吧，" },
+    { orig: "来吾道夫先路！", trans: "来呀，我在前引导开路！" },
+    { orig: "长太息以掩涕兮，", trans: "长长地叹息，偷偷地掩面哭泣，" },
+    { orig: "哀民生之多艰。", trans: "为百姓苦难的生活感到哀伤。" },
+    { orig: "余虽好修姱以鞿羁兮，", trans: "我虽爱好修洁严于责己，" },
+    { orig: "謇朝谇而夕替。", trans: "早晨直言进谏晚上就被罢免。" },
+    { orig: "既替余以蕙纕兮，", trans: "他们攻击我佩带蕙草啊，" },
+    { orig: "又申之以揽茝。", trans: "又指责我爱好采集茝兰。" },
+    { orig: "亦余心之所善兮，", trans: "我真心爱好修身洁行，" },
+    { orig: "虽九死其犹未悔。", trans: "即使死多次也不会后悔。" },
+    { orig: "怨灵修之浩荡兮，", trans: "怨就怨楚王这样糊涂啊，" },
+    { orig: "终不察夫民心。", trans: "他始终不体察别人心情。" },
+    { orig: "众女嫉余之蛾眉兮，", trans: "那些小人妒忌我的丰姿，" },
+    { orig: "谣诼谓余以善淫。", trans: "造谣诬蔑说我妖艳好淫。" },
+    { orig: "固时俗之工巧兮，", trans: "庸人本来善于投机取巧，" },
+    { orig: "偭规矩而改错。", trans: "背弃规矩而又改变政策。" },
+    { orig: "背绳墨以追曲兮，", trans: "违背是非标准追求邪曲，" },
+    { orig: "竞周容以为度。", trans: "争着苟合取悦作为法则。" },
+    { orig: "忳郁邑余侘傺兮，", trans: "忧愁烦闷啊我失意不安，" },
+    { orig: "吾独穷困乎此时也。", trans: "现在孤独穷困多么艰难。" },
+    { orig: "宁溘死以流亡兮，", trans: "宁可马上死去魂魄离散，" },
+    { orig: "余不忍为此态也。", trans: "媚俗取巧啊我坚决不干。" },
+    { orig: "鸷鸟之不群兮，", trans: "雄鹰不与那些燕雀同群，" },
+    { orig: "自前世而固然。", trans: "原本自古以来就是这般。" },
+    { orig: "何方圜之能周兮，", trans: "方和圆怎能够互相配合，" },
+    { orig: "夫孰异道而相安？", trans: "志向不同何能彼此相安。" },
+    { orig: "屈心而抑志兮，", trans: "内心承受委屈，心志受到压抑，" },
+    { orig: "忍尤而攘诟。", trans: "忍受责难，遭受耻辱。" },
+    { orig: "伏清白以死直兮，", trans: "保持清白节操死于直道，" },
+    { orig: "固前圣之所厚。", trans: "这本为古代圣贤所称赞！" }
+    ];
+
+    let currentData = []; 
+    let currentIndex = 0;
+    let highestIndex = 0; 
+    let typedProgress = []; 
+    let currentLevel = 1; 
+
+    let mistakeCounter = {}; 
+    let currentSessionMistakes = new Set(); 
+    let autoInputCount = 0; 
+
+    const transEl = document.getElementById('translation');
+    const blanksEl = document.getElementById('blanks');
+    const inputEl = document.getElementById('user-input');
+    const progressEl = document.getElementById('progress-text');
+    const levelBadgeEl = document.getElementById('level-badge');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const evalEl = document.getElementById('evaluation-text');
+
+    let isComposing = false; 
+
+    function getPureChars(str) {
+        return str.replace(/[，。；？！、\s]/g, '');
+    }
+
+    function shuffleArray(array) {
+        let newArr = [...array];
+        for (let i = newArr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+        }
+        return newArr;
+    }
+
+    function focusInput() {
+        if (currentIndex >= highestIndex) {
+            inputEl.focus();
+        }
+    }
+
+    function returnToStart() {
+        document.getElementById('start-screen').style.display = 'flex';
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('summary-screen').style.display = 'none';
+        
+        mistakeCounter = {};
+        currentSessionMistakes.clear();
+        autoInputCount = 0;
+    }
+
+    function initGame(level) {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('summary-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        
+        currentLevel = level;
+        currentIndex = 0;
+        highestIndex = 0;
+        autoInputCount = 0;
+        mistakeCounter = {};
+        currentSessionMistakes.clear();
+        typedProgress = new Array(fullData.length).fill("");
+
+        let baseData = fullData.map((item, index) => ({...item, originalIndex: index}));
+
+        if (currentLevel === 1) {
+            levelBadgeEl.innerText = "当前模式：顺序全文默写";
+            currentData = baseData;
+        } else if (currentLevel === 2) {
+            levelBadgeEl.innerText = "当前模式：随机乱序挑战";
+            currentData = shuffleArray(baseData);
+        }
+
+        loadSentence();
+    }
+
+    function loadSentence() {
+        const currentItem = currentData[currentIndex];
+        transEl.innerText = currentItem.trans;
+        progressEl.innerText = `进度：${currentIndex + 1}/${currentData.length}`;
+        
+        if (currentIndex < highestIndex) {
+            const origPure = getPureChars(currentItem.orig);
+            inputEl.value = origPure;
+            renderBlanks(origPure, true); 
+        } else {
+            inputEl.value = typedProgress[currentIndex];
+            renderBlanks(typedProgress[currentIndex], false);
+            setTimeout(() => focusInput(), 100);
+        }
+
+        updateNavButtons();
+    }
+
+    function renderBlanks(typedPureChars, isCompleted) {
+        const origText = currentData[currentIndex].orig;
+        blanksEl.innerHTML = "";
+        let charIndex = 0; 
+
+        for (let i = 0; i < origText.length; i++) {
+            const char = origText[i];
+            const isPunctuation = /[，。；？！、\s]/.test(char);
+            const span = document.createElement('span');
+            
+            if (isPunctuation) {
+                span.className = "char-box punctuation";
+                span.innerText = char;
+            } else {
+                span.className = "char-box char-blank";
+                
+                if (charIndex < typedPureChars.length) {
+                    span.innerText = typedPureChars[charIndex];
+                    span.style.borderBottom = "none";
+                    span.style.color = "#8A8A80"; 
+                } else {
+                    span.innerText = "";
+                    if (!isCompleted && charIndex === typedPureChars.length) {
+                        span.classList.add('active');
+                    }
+                }
+                charIndex++;
+            }
+            blanksEl.appendChild(span);
+        }
+    }
+
+    function updateNavButtons() {
+        btnPrev.disabled = (currentIndex === 0);
+        if (currentIndex < highestIndex) {
+            btnNext.disabled = false;
+            if (currentIndex === currentData.length - 1) {
+                btnNext.innerText = "查看总结"; 
+            } else {
+                btnNext.innerText = "下一句";
+            }
+        } else {
+            btnNext.disabled = true;
+            btnNext.innerText = "下一句";
+        }
+    }
+
+    function goPrev() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            loadSentence();
+        }
+    }
+
+    function goNext() {
+        if (currentIndex < currentData.length - 1) {
+            currentIndex++;
+            loadSentence();
+        } else if (currentIndex === currentData.length - 1 && highestIndex === currentData.length) {
+            showSummary(); 
+        }
+    }
+
+    // 输入法逻辑（兼容拼音及手写）
+    inputEl.addEventListener('compositionstart', () => { isComposing = true; });
+    inputEl.addEventListener('compositionend', () => { 
+        isComposing = false; 
+        handleInputValidation(); 
+    });
+    inputEl.addEventListener('input', () => { 
+        if (!isComposing) handleInputValidation(); 
+    });
+
+    function handleInputValidation() {
+        if (currentIndex < highestIndex) return; 
+
+        const origIndex = currentData[currentIndex].originalIndex;
+        const origPureChars = getPureChars(currentData[currentIndex].orig);
+        const rawVal = inputEl.value;
+        const previousLen = typedProgress[currentIndex].length;
+        
+        if (origPureChars.startsWith(rawVal)) {
+            // 自动输入检测：单次增长大于3字
+            const newLen = rawVal.length;
+            if (newLen > previousLen && (newLen - previousLen) >= 3) {
+                autoInputCount++;
+            }
+
+            typedProgress[currentIndex] = rawVal;
+            renderBlanks(rawVal, false);
+            
+            if (rawVal === origPureChars) {
+                highestIndex = Math.max(highestIndex, currentIndex + 1);
+                inputEl.blur(); 
+                renderBlanks(rawVal, true); 
+                
+                setTimeout(() => {
+                    goNext();
+                }, 400); 
+            }
+        } else {
+            // 错误处理
+            mistakeCounter[origIndex] = (mistakeCounter[origIndex] || 0) + 1;
+            if (mistakeCounter[origIndex] >= 3) {
+                currentSessionMistakes.add(origIndex);
+            }
+            inputEl.value = typedProgress[currentIndex];
+        }
+    }
+
+    function showSummary() {
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('summary-screen').style.display = 'block';
+        
+        if (autoInputCount > 15) {
+            evalEl.innerText = `千里之堤，溃于蚁穴。你用了 ${autoInputCount} 次自动输入。`;
+            evalEl.style.color = "#d9534f"; 
+        } else {
+            evalEl.innerText = "千里之行，始于足下。一次次键盘的敲击，是你的努力可见。";
+            evalEl.style.color = "var(--accent-green)"; 
+        }
+
+        const listEl = document.getElementById('mistakes-list');
+        listEl.innerHTML = "";
+        let mistakesArray = Array.from(currentSessionMistakes);
+
+        if (mistakesArray.length > 0) {
+            document.getElementById('summary-subtitle').innerText = "以下是本次练习中错误超过3次的句子：";
+            mistakesArray.forEach(index => {
+                const item = fullData[index];
+                const div = document.createElement('div');
+                div.className = "mistake-item";
+                div.innerHTML = `<strong>原文：</strong>${item.orig}<br><span style="color:#666; font-size:14px;"><strong>译文：</strong>${item.trans}</span>`;
+                listEl.appendChild(div);
+            });
+        } else {
+            document.getElementById('summary-subtitle').innerText = "非常完美！全部通关且没有严重错误。";
+        }
+    }
+
+    document.addEventListener('click', (e) => {
+        const gameScreen = document.getElementById('game-screen');
+        if (gameScreen.style.display !== 'none' && currentIndex < highestIndex) {
+            if (e.target.tagName !== 'BUTTON') {
+                focusInput();
+            }
+        }
+    });
+
+    window.onload = returnToStart;
+</script>
+</body>
+</html>

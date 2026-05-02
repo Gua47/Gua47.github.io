@@ -584,7 +584,9 @@
             
             if (rawVal === origPureChars) {
                 highestIndex = Math.max(highestIndex, currentIndex + 1);
+                if (currentIndex === currentData.length - 1) {
                 inputEl.blur(); 
+                }
                 renderBlanks(rawVal, true); 
                 
                 setTimeout(() => {

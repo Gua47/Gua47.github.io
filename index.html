@@ -3,30 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的文言文背诵库</title>
+    <title>文言文学习闯关</title>
     <style>
-        body { background: #e9e5d8; font-family: "Microsoft YaHei"; padding: 40px 20px; text-align: center; }
-        h1 { color: #333; margin-bottom: 40px; }
-        .menu-item { 
-            display: block; width: 100%; max-width: 300px; margin: 15px auto;
-            padding: 15px; background: #fff; border: 1px solid #c9c4b4;
-            text-decoration: none; color: #6b8e23; font-weight: bold; border-radius: 8px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #f0ece0;
+            padding: 40px 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 50px;
+            font-size: 2.5rem;
+        }
+        .section-title {
+            font-size: 1.8rem;
+            color: #222;
+            margin: 40px 0 20px;
+            text-align: center;
+        }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .btn {
+            display: block;
+            text-decoration: none;
+            background-color: #fff;
+            color: #558b2f;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 18px;
+            text-align: center;
+            font-size: 1.3rem;
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            background-color: #f5f5f5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body>
-    <h1>文言文背诵闯关</h1>
-    <a href="lanting.html" class="menu-item"> 兰亭集序</a>
-    <a href="guiqulaixici.html" class="menu-item">归去来兮辞</a>
-    <h2>课下注释练习</h2>
-     <a href="ziluzici.html" class="menu-item">子路曾晳冉有公西华侍坐</a>
-    <h3>翻译默写</h3>
-    <a href="lisaofymx.html" class="menu-item">离骚 </a>
-    <a href="chenqingfymx.html" class="menu-item">陈情表</a>
-    <a href="xiangjifymx.html" class="menu-item">项脊轩志</a>
-    <a href="lantingfymx.html" class="menu-item">兰亭集序</a>
-    <a href="guiqufymx.html" class="menu-item">归去来兮辞并序 </a>
-    <a href="zhongshufymx.html" class="menu-item">种树郭橐驼传</a>
-    <a href="shizhongfymx.html" class="menu-item">石钟山记</a>
+    <h1>文言文学习闯关</h1>
+
+    <!-- 1. 文言文背诵闯关游戏 -->
+    <div class="section">
+        <h2 class="section-title">文言文背诵闯关</h2>
+        <div class="btn-group">
+            <a href="beisong/lanting.html" class="btn">兰亭集序</a>
+            <a href="beisong/guiqu.html" class="btn">归去来兮辞</a>
+        </div>
+    </div>
+
+    <!-- 2. 课下字词注释练习 -->
+    <div class="section">
+        <h2 class="section-title">课下字词注释练习</h2>
+        <div class="btn-group">
+            <a href="zici/lanting.html" class="btn">兰亭集序 待更新</a>
+            <a href="zici/guiqu.html" class="btn">归去来兮辞 待更新</a>
+            <a href="zici/zilu.html" class="btn">子路曾皙冉有公西华侍坐</a>
+        </div>
+    </div>
+
+    <!-- 3. 翻译默写练习 -->
+    <div class="section">
+        <h2 class="section-title">翻译默写练习</h2>
+        <div class="btn-group">
+            <a href="fymx/lisao.html" class="btn">离骚</a>
+            <a href="fymx/chenqing.html" class="btn">陈情表</a>
+            <a href="fymx/xiangji.html" class="btn">项脊轩志</a>
+            <a href="fymx/lanting.html" class="btn">兰亭集序</a>           
+            <a href="fymx/guiqulaixici.html" class="btn">归去来兮辞并序</a>
+            <a href="fymx/zhongshu.html" class="btn">种树郭橐驼传</a>
+            <a href="fymx/shizhong.html" class="btn">石钟山记</a>
+        </div>
+    </div>
 </body>
 </html>

@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>《陈情表》翻译默写通关</title>
+    <style>
+        /* 颜色与字体设定 */
+        :root {
+            --bg-color: #F5F5EC;
+            --text-main: #333333;
+            --text-muted: #888888;
+            --accent-green: #6A8B47;
+            --line-color: #D3D3C8;
+            --box-bg: #EAEAE0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: "STZhongsong", "SimSun", "Songti SC", serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* ----- 首页选择界面 ----- */
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            margin-top: 40px;
+            position: relative;
+        }
+
+        .back-to-main {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 16px;
+            transition: color 0.3s ease;
+        }
+        
+        .back-to-main:hover {
+            color: var(--accent-green);
+        }
+
+        .main-title {
+            font-size: 36px;
+            font-weight: normal;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+        }
+
+        .sub-title {
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        .mode-btn {
+            background-color: transparent;
+            color: var(--accent-green);
+            border: 2px solid var(--accent-green);
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 30px;
+            margin: 15px 0;
+            width: 80%;
+            max-width: 300px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .mode-btn:active {
+            background-color: rgba(106, 139, 71, 0.1);
+        }
+
+        /* ----- 游戏界面 ----- */
+        #game-screen {
+            display: none; 
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-family: inherit;
+            cursor: pointer;
+            padding: 0;
+            font-size: 14px;
+        }
+
+        .title-area {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title-area h1 {
+            font-size: 28px;
+            font-weight: normal;
+            margin: 0 0 10px 0;
+            letter-spacing: 2px;
+        }
+
+        .title-area p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        #level-badge {
+            text-align: center;
+            font-size: 16px;
+            color: var(--accent-green);
+            margin-bottom: 20px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .translation-box {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            text-align: center;
+            min-height: 50px;
+        }
+
+        .blanks-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+            font-size: 24px;
+            margin-bottom: 30px;
+            line-height: 2;
+            background-color: var(--box-bg);
+            border: 1px solid var(--line-color);
+            border-radius: 8px;
+            padding: 20px 10px;
+            min-height: 40px;
+            cursor: text; 
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .char-box {
+            display: inline-block;
+            min-width: 24px;
+            text-align: center;
+            color: var(--text-muted); 
+        }
+
+        .char-blank {
+            min-width: 24px;
+            height: 30px;
+            display: inline-block;
+            border-bottom: 1px solid var(--text-muted); 
+            margin: 0 2px;
+        }
+
+        .char-blank.active {
+            border-bottom: 2px solid var(--accent-green);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { border-color: transparent; }
+            50% { border-color: var(--accent-green); }
+        }
+
+        .punctuation {
+            color: var(--text-muted);
+            margin: 0 2px;
+        }
+
+        #user-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .nav-btn {
+            background-color: transparent;
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .nav-btn:disabled {
+            color: var(--line-color);
+            border-color: var(--line-color);
+            cursor: not-allowed;
+        }
+
+        /* ----- 总结界面 ----- */
+        #summary-screen {
+            display: none;
+            text-align: center;
+            padding-bottom: 40px;
+        }
+        
+        #evaluation-text {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #fff;
+            border: 1px dashed var(--line-color);
+        }
+
+        .mistake-item {
+            text-align: left;
+            background: rgba(106, 139, 71, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .primary-btn {
+            background-color: var(--accent-green);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            margin-top: 20px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="start-screen">
+        <a href="index.html" class="back-to-main">← 返回总目录</a>
+
+        <h1 class="main-title">陈情表</h1>
+        <p class="sub-title">默写通关挑战</p>
+        
+        <p style="font-size: 14px; color: #d9534f; margin-bottom: 20px; text-align: center; padding: 0 20px;">
+            提示：建议使用<strong>手写键盘</strong>练习以增强记忆。
+        </p>
+
+        <button class="mode-btn" onclick="initGame(1)">顺序全文默写</button>
+        <button class="mode-btn" onclick="initGame(2)">随机乱序挑战</button>
+    </div>
+
+    <div id="game-screen">
+        <div class="header">
+            <button class="header-btn" onclick="returnToStart()">← 返回模式选择</button>
+            <span id="progress-text">进度：1/8</span>
+        </div>
+
+        <div class="title-area">
+            <h1>陈情表</h1>
+            <p>李密〔西晋〕</p>
+        </div>
+        
+        <div id="level-badge">当前模式：顺序全文默写</div>
+
+        <div class="translation-box" id="translation"></div>
+
+        <div class="blanks-container" id="blanks" onclick="focusInput()"></div>
+
+        <input type="text" id="user-input" 
+               autocomplete="off" 
+               autocorrect="off" 
+               autocapitalize="off" 
+               spellcheck="false" 
+               data-form-type="other">
+
+        <div class="nav-buttons">
+            <button id="btn-prev" class="nav-btn" onclick="goPrev()">上一句</button>
+            <button id="btn-next" class="nav-btn" onclick="goNext()">下一句</button>
+        </div>
+    </div>
+
+    <div id="summary-screen">
+        <div class="title-area">
+            <h1 id="summary-title">练习完成</h1>
+            <p id="evaluation-text"></p>
+            <p id="summary-subtitle">以下是本次错误超过3次的重点突破句子：</p>
+        </div>
+        <div id="mistakes-list"></div>
+        <button class="primary-btn" onclick="returnToStart()">返回首页</button>
+    </div>
+</div>
+
+<script>
+    const fullData = [
+    { orig: "臣密言：", trans: "臣子李密陈言：" },
+    { orig: "臣以险衅，", trans: "我因命运坎坷，" },
+    { orig: "夙遭闵凶。", trans: "小时候遭遇到了不幸，" },
+    { orig: "生孩六月，", trans: "刚出生六个月，" },
+    { orig: "慈父见背；", trans: "我慈爱的父亲就不幸去世了。" },
+    { orig: "行年四岁，", trans: "经过了四年，" },
+    { orig: "舅夺母志。", trans: "舅父逼母亲改嫁。" },
+    { orig: "祖母刘愍臣孤弱，", trans: "我的祖母刘氏，怜悯我从小丧父，" },
+    { orig: "躬亲抚养。", trans: "便亲自对我加以抚养。" },
+    { orig: "臣少多疾病，", trans: "臣小的时候经常生病，" },
+    { orig: "九岁不行，", trans: "九岁时还不会行走。" },
+    { orig: "零丁孤苦，", trans: "孤独无靠，" },
+    { orig: "至于成立。", trans: "一直到成人自立。" },
+    { orig: "既无伯叔，", trans: "既没有叔叔伯伯，" },
+    { orig: "终鲜兄弟，", trans: "又没什么兄弟，" },
+    { orig: "门衰祚薄，", trans: "门庭衰微而福分浅薄，" },
+    { orig: "晚有儿息。", trans: "很晚才有子嗣。" },
+    { orig: "外无期功强近之亲，", trans: "在外面没有任何近亲，" },
+    { orig: "内无应门五尺之僮，", trans: "在家里又没有照应门户的童仆。" },
+    { orig: "茕茕孑立，", trans: "生活孤单没有依靠，" },
+    { orig: "形影相吊。", trans: "每天只有自己的身体和影子相互安慰。" },
+    { orig: "而刘夙婴疾病，", trans: "但祖母又早被疾病缠绕，" },
+    { orig: "常在床蓐，", trans: "常年卧床不起，" },
+    { orig: "臣侍汤药，", trans: "我侍奉她吃饭喝药，" },
+    { orig: "未曾废离。", trans: "从来就没有废养而远离她。" },
+    { orig: "逮奉圣朝，", trans: "到了晋朝建立，" },
+    { orig: "沐浴清化。", trans: "我蒙受着清明的政治教化。" },
+    { orig: "前太守臣逵察臣孝廉；", trans: "先有名叫逵的太守察举臣为孝廉，" },
+    { orig: "后刺史臣荣举臣秀才。", trans: "后又有名叫荣的刺史推举臣为优秀人才。" },
+    { orig: "臣以供养无主，", trans: "臣下因为供奉赡养祖母的事无人承担，" },
+    { orig: "辞不赴命。", trans: "辞谢不接受任命。" },
+    { orig: "诏书特下，", trans: "朝廷又特地下了诏书，" },
+    { orig: "拜臣郎中，", trans: "任命我为郎中，" },
+    { orig: "寻蒙国恩，", trans: "不久又蒙受国家恩命，" },
+    { orig: "除臣洗马。", trans: "任命我为洗马。" },
+    { orig: "猥以微贱，", trans: "像我这样出身微贱地位卑下的人，" },
+    { orig: "当侍东宫，", trans: "担当侍奉太子的职务，" },
+    { orig: "非臣陨首所能上报。", trans: "这实在不是我杀身捐躯所能报答朝廷的。" },
+    { orig: "臣具以表闻，", trans: "我将以上苦衷上表报告，" },
+    { orig: "辞不就职。", trans: "加以辞谢不去就职。" },
+    { orig: "诏书切峻，", trans: "但是诏书急切严峻，" },
+    { orig: "责臣逋慢；", trans: "责备我逃避命令，有意拖延，态度傲慢。" },
+    { orig: "郡县逼迫，", trans: "郡县长官催促我立刻上路；" },
+    { orig: "催臣上道；", trans: "催促我立刻上路；" },
+    { orig: "州司临门，", trans: "州官登门督促，" },
+    { orig: "急于星火。", trans: "比流星坠落还要急迫。" },
+    { orig: "臣欲奉诏奔驰，", trans: "我很想遵从皇上的旨意赴京就职，" },
+    { orig: "则刘病日笃，", trans: "但祖母刘氏的病却一天比一天重；" },
+    { orig: "欲苟顺私情，", trans: "想要姑且顺从自己的私情，" },
+    { orig: "则告诉不许：", trans: "但报告申诉不被允许。" },
+    { orig: "臣之进退，", trans: "我进退两难，" },
+    { orig: "实为狼狈。", trans: "处境实为窘迫。" },
+    { orig: "伏惟圣朝以孝治天下，", trans: "我俯伏思量晋朝是用孝道来治理天下的，" },
+    { orig: "凡在故老，", trans: "凡是年老而德高的旧臣，" },
+    { orig: "犹蒙矜育，", trans: "尚且还受到怜悯养育，" },
+    { orig: "况臣孤苦，", trans: "何况我的孤苦程度更为严重呢。" },
+    { orig: "特为尤甚。", trans: "何况我的孤苦程度更为严重呢。" },
+    { orig: "且臣少仕伪朝，", trans: "况且我年轻的时候曾经做过蜀汉的官，" },
+    { orig: "历职郎署，", trans: "担任过郎官职务，" },
+    { orig: "本图宦达，", trans: "本来就希望做官显达，" },
+    { orig: "不矜名节。", trans: "并不顾惜名声节操。" },
+    { orig: "今臣亡国贱俘，", trans: "现在我是一个低贱的亡国俘虏，" },
+    { orig: "至微至陋，", trans: "十分卑微浅陋，" },
+    { orig: "过蒙拔擢，", trans: "受到过分提拔，" },
+    { orig: "宠命优渥，", trans: "恩宠优厚，" },
+    { orig: "岂敢盘桓，", trans: "怎敢犹豫不决，" },
+    { orig: "有所希冀。", trans: "而有非分的企求呢。" },
+    { orig: "但以刘日薄西山，", trans: "只是因为祖母刘氏寿命即将终了，" },
+    { orig: "气息奄奄，", trans: "气息微弱，" },
+    { orig: "人命危浅，", trans: "生命垂危，" },
+    { orig: "朝不虑夕。", trans: "早上不能想到晚上怎样。" },
+    { orig: "臣无祖母，", trans: "臣下我如果没有祖母，" },
+    { orig: "无以至今日，", trans: "就没有今天的样子；" },
+    { orig: "祖母无臣，", trans: "祖母如果没有我的照料，" },
+    { orig: "无以终余年。", trans: "也无法度过她的余生。" },
+    { orig: "母、孙二人，", trans: "我们祖孙二人，" },
+    { orig: "更相为命，", trans: "互相依靠而维持生命，" },
+    { orig: "是以区区不能废远。", trans: "因此我的内心不愿废止奉养，远离祖母。" },
+    { orig: "臣密今年四十有四，", trans: "臣下我现在的年龄四十四岁了，" },
+    { orig: "祖母今年九十有六，", trans: "祖母现在的年龄九十六岁了，" },
+    { orig: "是臣尽节于陛下之日长，", trans: "臣下我在陛下面前尽忠尽节的日子还长着呢，" },
+    { orig: "报养刘之日短也。", trans: "而在祖母刘氏面前尽孝尽心的日子已经不多了。" },
+    { orig: "乌鸟私情，", trans: "我怀着乌鸦反哺的私情，" },
+    { orig: "愿乞终养。", trans: "乞求能够准许我完成对祖母养老送终的心愿。" },
+    { orig: "臣之辛苦，", trans: "我的辛酸苦楚，" },
+    { orig: "非独蜀之人士及二州牧伯所见明知，", trans: "并不仅仅被蜀地的百姓及益州、梁州的长官所亲眼目睹、内心明白，" },
+    { orig: "皇天后土实所共鉴。", trans: "连天地神明也都看得清清楚楚。" },
+    { orig: "愿陛下矜愍愚诚，", trans: "希望陛下能怜悯我愚昧诚心，" },
+    { orig: "听臣微志，", trans: "请允许我完成臣下一点小小的心愿，" },
+    { orig: "庶刘侥幸，", trans: "使祖母刘氏能够侥幸地，" },
+    { orig: "保卒余年。", trans: "保全她的余生。" },
+    { orig: "臣生当陨首，", trans: "我活着应当杀身报效朝廷，" },
+    { orig: "死当结草。", trans: "死了也要结草衔环来报答陛下的恩情。" },
+    { orig: "臣不胜犬马怖惧之情，", trans: "臣下我怀着犬马一样不胜恐惧的心情，" },
+    { orig: "谨拜表以闻。", trans: "恭敬地呈上此表来使陛下知道这件事。" }
+    ];
+
+    let currentData = []; 
+    let currentIndex = 0;
+    let highestIndex = 0; 
+    let typedProgress = []; 
+    let currentLevel = 1; 
+
+    let mistakeCounter = {}; 
+    let currentSessionMistakes = new Set(); 
+    let autoInputCount = 0; 
+
+    const transEl = document.getElementById('translation');
+    const blanksEl = document.getElementById('blanks');
+    const inputEl = document.getElementById('user-input');
+    const progressEl = document.getElementById('progress-text');
+    const levelBadgeEl = document.getElementById('level-badge');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const evalEl = document.getElementById('evaluation-text');
+
+    let isComposing = false; 
+
+    function getPureChars(str) {
+        return str.replace(/[，。；？！、\s]/g, '');
+    }
+
+    function shuffleArray(array) {
+        let newArr = [...array];
+        for (let i = newArr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+        }
+        return newArr;
+    }
+
+    function focusInput() {
+        if (currentIndex >= highestIndex) {
+            inputEl.focus();
+        }
+    }
+
+    function returnToStart() {
+        document.getElementById('start-screen').style.display = 'flex';
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('summary-screen').style.display = 'none';
+        
+        mistakeCounter = {};
+        currentSessionMistakes.clear();
+        autoInputCount = 0;
+    }
+
+    function initGame(level) {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('summary-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        
+        currentLevel = level;
+        currentIndex = 0;
+        highestIndex = 0;
+        autoInputCount = 0;
+        mistakeCounter = {};
+        currentSessionMistakes.clear();
+        typedProgress = new Array(fullData.length).fill("");
+
+        let baseData = fullData.map((item, index) => ({...item, originalIndex: index}));
+
+        if (currentLevel === 1) {
+            levelBadgeEl.innerText = "当前模式：顺序全文默写";
+            currentData = baseData;
+        } else if (currentLevel === 2) {
+            levelBadgeEl.innerText = "当前模式：随机乱序挑战";
+            currentData = shuffleArray(baseData);
+        }
+
+        loadSentence();
+    }
+
+    function loadSentence() {
+        const currentItem = currentData[currentIndex];
+        transEl.innerText = currentItem.trans;
+        progressEl.innerText = `进度：${currentIndex + 1}/${currentData.length}`;
+        
+        if (currentIndex < highestIndex) {
+            const origPure = getPureChars(currentItem.orig);
+            inputEl.value = origPure;
+            renderBlanks(origPure, true); 
+        } else {
+            inputEl.value = typedProgress[currentIndex];
+            renderBlanks(typedProgress[currentIndex], false);
+            setTimeout(() => focusInput(), 100);
+        }
+
+        updateNavButtons();
+    }
+
+    function renderBlanks(typedPureChars, isCompleted) {
+        const origText = currentData[currentIndex].orig;
+        blanksEl.innerHTML = "";
+        let charIndex = 0; 
+
+        for (let i = 0; i < origText.length; i++) {
+            const char = origText[i];
+            const isPunctuation = /[，。；？！、\s]/.test(char);
+            const span = document.createElement('span');
+            
+            if (isPunctuation) {
+                span.className = "char-box punctuation";
+                span.innerText = char;
+            } else {
+                span.className = "char-box char-blank";
+                
+                if (charIndex < typedPureChars.length) {
+                    span.innerText = typedPureChars[charIndex];
+                    span.style.borderBottom = "none";
+                    span.style.color = "#8A8A80"; 
+                } else {
+                    span.innerText = "";
+                    if (!isCompleted && charIndex === typedPureChars.length) {
+                        span.classList.add('active');
+                    }
+                }
+                charIndex++;
+            }
+            blanksEl.appendChild(span);
+        }
+    }
+
+    function updateNavButtons() {
+        btnPrev.disabled = (currentIndex === 0);
+        if (currentIndex < highestIndex) {
+            btnNext.disabled = false;
+            if (currentIndex === currentData.length - 1) {
+                btnNext.innerText = "查看总结"; 
+            } else {
+                btnNext.innerText = "下一句";
+            }
+        } else {
+            btnNext.disabled = true;
+            btnNext.innerText = "下一句";
+        }
+    }
+
+    function goPrev() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            loadSentence();
+        }
+    }
+
+    function goNext() {
+        if (currentIndex < currentData.length - 1) {
+            currentIndex++;
+            loadSentence();
+        } else if (currentIndex === currentData.length - 1 && highestIndex === currentData.length) {
+            showSummary(); 
+        }
+    }
+
+    // 输入法逻辑（兼容拼音及手写）
+    inputEl.addEventListener('compositionstart', () => { isComposing = true; });
+    inputEl.addEventListener('compositionend', () => { 
+        isComposing = false; 
+        handleInputValidation(); 
+    });
+    inputEl.addEventListener('input', () => { 
+        if (!isComposing) handleInputValidation(); 
+    });
+
+        function handleInputValidation() {
+        if (currentIndex < highestIndex) return; 
+
+        const origIndex = currentData[currentIndex].originalIndex;
+        const origPureChars = getPureChars(currentData[currentIndex].orig);
+        const rawVal = inputEl.value;
+        const currentProgress = typedProgress[currentIndex];
+        
+        let isValid = false;
+        let newProgress = currentProgress;
+
+        // 核心修复：兼容手写与拼音的双重判断逻辑
+        
+        // 情况1：拼音键盘（正常拼接了之前的内容，比如传进来的是 "永和"）
+        if (origPureChars.startsWith(rawVal)) {
+            // 只要不是按了删除键，就判定为正确
+            if (rawVal.length >= currentProgress.length) {
+                isValid = true;
+                newProgress = rawVal;
+            } else {
+                inputEl.value = currentProgress; // 忽略删除操作
+                return;
+            }
+        } 
+        // 情况2：手写键盘（丢失了前面的字，只传进来了新写的字，比如传进来的只有 "和"）
+        else {
+            const expectedRemainder = origPureChars.substring(currentProgress.length);
+            // 检查：新写进来的字，是不是紧接着该出现的字？
+            if (rawVal.length > 0 && expectedRemainder.startsWith(rawVal)) {
+                isValid = true;
+                newProgress = currentProgress + rawVal; // 手动把前面的进度拼接起来
+            }
+            // 情况3：极致兼容（只要键盘传进来的最后一个字是正确的，就算对）
+            else if (rawVal.length > 0 && rawVal.charAt(rawVal.length - 1) === origPureChars.charAt(currentProgress.length)) {
+                isValid = true;
+                newProgress = currentProgress + rawVal.charAt(rawVal.length - 1);
+            }
+        }
+
+        if (isValid) {
+            // 检测是否自动填入了3个字及以上（针对联想作弊检测）
+            const newLen = newProgress.length;
+            const previousLen = currentProgress.length;
+            if (newLen > previousLen && (newLen - previousLen) >= 3) {
+                autoInputCount++;
+            }
+
+            // 更新输入进度
+            typedProgress[currentIndex] = newProgress;
+            inputEl.value = newProgress; // 强制同步给底层输入框，防止手写键盘错乱
+            renderBlanks(newProgress, false);
+            
+            // 判断这句是否全部打完
+            if (newProgress === origPureChars) {
+                highestIndex = Math.max(highestIndex, currentIndex + 1);
+                
+                // 如果是最后一句，收起键盘
+                if (currentIndex === currentData.length - 1) {
+                    inputEl.blur(); 
+                }
+                
+                renderBlanks(newProgress, true); 
+                
+                setTimeout(() => {
+                    goNext();
+                }, 400); 
+            }
+        } else {
+            // 错误处理（错 3 次判定为错题）
+            mistakeCounter[origIndex] = (mistakeCounter[origIndex] || 0) + 1;
+            if (mistakeCounter[origIndex] >= 3) {
+                currentSessionMistakes.add(origIndex);
+            }
+            
+            // 强制撤回，恢复到正确进度
+            inputEl.value = currentProgress;
+        }
+    }
+
+    function showSummary() {
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('summary-screen').style.display = 'block';
+        
+        if (autoInputCount > 15) {
+            evalEl.innerText = `千里之堤，溃于蚁穴。你用了 ${autoInputCount} 次自动输入。`;
+            evalEl.style.color = "#d9534f"; 
+        } else {
+            evalEl.innerText = "千里之行，始于足下。一次次键盘的敲击，是你的努力可见。";
+            evalEl.style.color = "var(--accent-green)"; 
+        }
+
+        const listEl = document.getElementById('mistakes-list');
+        listEl.innerHTML = "";
+        let mistakesArray = Array.from(currentSessionMistakes);
+
+        if (mistakesArray.length > 0) {
+            document.getElementById('summary-subtitle').innerText = "以下是本次练习中错误超过3次的句子：";
+            mistakesArray.forEach(index => {
+                const item = fullData[index];
+                const div = document.createElement('div');
+                div.className = "mistake-item";
+                div.innerHTML = `<strong>原文：</strong>${item.orig}<br><span style="color:#666; font-size:14px;"><strong>译文：</strong>${item.trans}</span>`;
+                listEl.appendChild(div);
+            });
+        } else {
+            document.getElementById('summary-subtitle').innerText = "非常完美！全部通关且没有严重错误。";
+        }
+    }
+
+    document.addEventListener('click', (e) => {
+        const gameScreen = document.getElementById('game-screen');
+        if (gameScreen.style.display !== 'none' && currentIndex < highestIndex) {
+            if (e.target.tagName !== 'BUTTON') {
+                focusInput();
+            }
+        }
+    });
+
+    window.onload = returnToStart;
+</script>
+</body>
+</html>

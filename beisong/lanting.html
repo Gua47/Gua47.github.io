@@ -80,13 +80,13 @@
         .blank { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-bottom: 2px solid #999; margin: 0 2px; vertical-align: middle; cursor: pointer; text-indent: 0; color: transparent; transition: all 0.2s; }
         .blank.active { border-bottom-color: var(--primary-color); background-color: rgba(107, 142, 35, 0.1); animation: breathe 1.2s infinite; }
         @keyframes breathe { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-        .blank.filled { border-bottom: none; color: var(--primary-color); font-weight: bold; width: auto; min-width: 1.2rem; }
+        .blank.filled { display: inline; border-bottom: none; color: var(--primary-color); font-weight: bold; width: auto; min-width: 1.2rem; height: auto; vertical-align: baseline; }
         .blank.wrong { color: var(--error-color) !important; font-weight: bold; border-bottom-color: var(--error-color); animation: shake 0.4s; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
         /* 1-3关 底部选项卡 */
         #options-container { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; padding: 20px 0; border-top: 1px solid var(--border-color); justify-content: center; gap: 15px; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
-        .option-btn { width: 55px; height: 55px; border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; background: #fff; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .option-btn { width: 55px; height: 55px; border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: #fff; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
         .option-btn:active { background: #f0f0f0; border-color: #999; }
 
         /* 第4关专属 */
@@ -806,7 +806,7 @@
                 evalDiv.innerHTML = `本次有 <strong>${l5AutoInputCount}</strong> 次疑似联想/整词输入。<br>默写贵在逐字回忆，建议下次用手写、逐字默写。`;
                 evalDiv.style.color = "var(--error-color)";
             } else if (l5TotalErrors === 0) {
-                evalDiv.innerHTML = "<strong>惊为天人！</strong><br>全程顺畅、一次未卡，对文本的掌握已达化境。";
+                evalDiv.innerHTML = "<strong>惊为天人！</strong><br>您全程顺畅、一次未卡，对文本的掌握已达化境。";
                 evalDiv.style.color = "var(--primary-color)";
             } else if (l5TotalErrors <= 8) {
                 evalDiv.innerHTML = `本次共有 <strong>${l5TotalErrors}</strong> 次落笔未中。<br>瑕不掩瑜，基础非常扎实！`;
@@ -877,10 +877,10 @@
                 // gravity 调小 + decay 调高 + ticks 拉长 → 彩带散开后缓缓飘落、滞空更久。
                 confetti({
                     particleCount: 200,
-                    spread: 180,
+                    spread: 130,
                     startVelocity: 45,
-                    gravity: 0.012,      // 重力极小 → 彩带几乎悬浮、缓缓飘落
-                    decay: 0.55,        // 衰减更慢 → 一路飘、不中途停
+                    gravity: 0.02,      // 重力极小 → 彩带几乎悬浮、缓缓飘落
+                    decay: 0.94,        // 衰减更慢 → 一路飘、不中途停
                     ticks: 560,         // 粒子寿命拉长
                     scalar: 1.05,
                     origin: { x: 0.5, y: 0.5 },

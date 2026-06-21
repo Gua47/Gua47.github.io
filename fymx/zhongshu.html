@@ -389,7 +389,7 @@
     let isComposing = false; 
 
     function getPureChars(str) {
-        return str.replace(/[，。；？！、\s]/g, '');
+        return str.replace(/[^\u4e00-\u9fa5]/g, '');
     }
 
     function shuffleArray(array) {
@@ -468,14 +468,14 @@
 
         for (let i = 0; i < origText.length; i++) {
             const char = origText[i];
-            const isPunctuation = /[，。；？！、\s]/.test(char);
+          const isChinese = /[\u4e00-\u9fa5]/.test(char);
             const span = document.createElement('span');
             
-            if (isPunctuation) {
-                span.className = "char-box punctuation";
-                span.innerText = char;
-            } else {
-                span.className = "char-box char-blank";
+           if (!isChinese) {
+    span.className = "char-box punctuation";
+    span.innerText = char;
+} else {
+    span.className = "char-box char-blank";
                 
                 if (charIndex < typedPureChars.length) {
                     span.innerText = typedPureChars[charIndex];

@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>背诵闯关：种树郭橐驼传</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+    // 兜底：CDN 未加载 confetti 时，用内嵌轻量礼花，保证礼花一定能动且不中断后续逻辑
+    if (typeof window.confetti === 'undefined') {
+        window.confetti = function (opts) {
+            opts = opts || {};
+            const count = opts.particleCount || 30;
+            const spread = opts.spread || 60;
+            const angle = (opts.angle != null ? opts.angle : 90) * Math.PI / 180;
+            const origin = opts.origin || { x: 0.5, y: 0.5 };
+            const colors = opts.colors || ['#6a8b47', '#f4a460', '#4682b4', '#d9534f', '#9b59b6'];
+            const cv = document.createElement('canvas');
+            cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+            cv.width = window.innerWidth; cv.height = window.innerHeight;
+            document.body.appendChild(cv);
+            const ctx = cv.getContext('2d');
+            const ps = [];
+            for (let i = 0; i < count; i++) {
+                const a = angle + (Math.random() - 0.5) * (spread * Math.PI / 180);
+                const v = 6 + Math.random() * 8;
+                ps.push({ x: origin.x * cv.width, y: origin.y * cv.height, vx: Math.cos(a) * v, vy: -Math.sin(a) * v, g: 0.04 + Math.random() * 0.04, s: 5 + Math.random() * 5, life: 200 + Math.random() * 80, c: colors[Math.floor(Math.random() * colors.length)], rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4 });
+            }
+            let frame = 0;
+            (function loop() {
+                ctx.clearRect(0, 0, cv.width, cv.height);
+                let alive = false;
+                ps.forEach(p => {
+                    if (p.life <= 0) return;
+                    alive = true;
+                    p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life--;
+                    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+                    ctx.globalAlpha = Math.max(0, p.life / 80);
+                    ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+                    ctx.restore();
+                });
+                frame++;
+                if (alive && frame < 600) requestAnimationFrame(loop);
+                else cv.remove();
+            })();
+        };
+    }
+    </script>
+    <style>
+        :root { --bg-color: #f4f1e6; --text-color: #333; --primary-color: #6a8b47; --border-color: #c9c4b4; --error-color: #d9534f; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: "PingFang SC", "STSong", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; box-sizing: border-box; }
+
+        .nav-header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .back-link { text-decoration: none; color: #666; font-size: 14px; cursor: pointer; }
+        .progress-container { width: 100%; max-width: 600px; margin-bottom: 30px; position: relative; }
+        .progress-line { height: 2px; background: var(--border-color); position: absolute; top: 15px; width: 100%; z-index: 1; }
+        .progress-active { height: 2px; background: var(--primary-color); position: absolute; top: 15px; z-index: 2; transition: width 0.3s; }
+        .nodes { display: flex; justify-content: space-between; position: relative; z-index: 3; }
+        .node { width: 30px; height: 30px; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999; cursor: pointer; transition: all 0.2s; }
+        .node.active { border-color: var(--primary-color); color: var(--primary-color); font-weight: bold; background: #fff; }
+
+        #game-area { width: 100%; max-width: 600px; padding-bottom: 250px; position: relative; }
+        .content-para { line-height: 2.5; font-size: 1.2rem; text-align: justify; text-indent: 2em; margin: 20px 0; }
+        h2 { text-align: center; margin-bottom: 5px; letter-spacing: 4px; }
+        .author { text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 25px; }
+        #seg-hint { text-align: center; color: var(--primary-color); font-size: 1.05rem; margin-bottom: 18px; font-weight: bold; letter-spacing: 1px; }
+        .l5-subtip { font-size: 0.9rem; color: #999; font-weight: normal; letter-spacing: 0; margin-top: 8px; line-height: 1.6; }
+        .l5-subtip-weak { font-size: 0.82rem; color: #b5b5ab; }
+
+        .blank { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-bottom: 2px solid #999; margin: 0 2px; vertical-align: middle; cursor: pointer; text-indent: 0; color: transparent; transition: all 0.2s; }
+        .blank.active { border-bottom-color: var(--primary-color); background-color: rgba(106, 139, 71, 0.1); animation: breathe 1.2s infinite; }
+        @keyframes breathe { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        .blank.filled { display: inline; border-bottom: none; color: var(--primary-color); font-weight: bold; width: auto; min-width: 1.2rem; height: auto; vertical-align: baseline; }
+        .blank.wrong { color: var(--error-color) !important; font-weight: bold; border-bottom-color: var(--error-color); animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+        #options-container { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; padding: 20px 0 80px; border-top: 1px solid var(--border-color); justify-content: center; gap: 15px; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+        .option-btn { width: 55px; height: 55px; border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: #fff; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .option-btn:active { background: #f0f0f0; border-color: #999; }
+
+        /* 第4关分段录入 */
+        #l4-container { display: none; width: 100%; flex-direction: column; align-items: center; }
+        #l4-seg-hint { text-align: center; color: var(--primary-color); font-size: 1rem; margin-bottom: 12px; font-weight: bold; }
+        #l4-trans { font-size: 0.95rem; color: #777; line-height: 1.7; margin-bottom: 14px; text-align: justify; }
+        #l4-textarea { width: 100%; height: 160px; padding: 15px; font-size: 1.1rem; border: 2px solid var(--border-color); border-radius: 8px; resize: none; margin-bottom: 10px; box-sizing: border-box; line-height: 1.8; font-family: inherit; }
+        #l4-result-area { width: 100%; font-size: 1.2rem; line-height: 2.5; text-indent: 2em; text-align: justify; margin-bottom: 20px; display: none; }
+        .l4-char-green { color: var(--primary-color); font-weight: bold; margin: 0 2px; }
+        .l4-char-red { color: var(--error-color); font-weight: bold; margin: 0 2px; cursor: pointer; border-bottom: 2px dashed var(--error-color); padding-bottom: 2px; }
+        .l4-char-miss { color: #aaa; margin: 0 2px; cursor: pointer; border-bottom: 2px dashed #aaa; padding-bottom: 2px; }
+        .l4-inline-input { width: 2rem; height: 2rem; font-size: 1.1rem; text-align: center; border: 2px solid var(--error-color); color: var(--error-color); font-weight: bold; border-radius: 4px; outline: none; margin: 0 2px; vertical-align: middle; background: #fff; }
+
+        .action-btn { width: 100%; max-width: 560px; padding: 12px 0; background: var(--primary-color); color: #fff; border: none; border-radius: 25px; font-size: 1.1rem; cursor: pointer; margin-top: 10px; transition: opacity 0.3s; }
+        .secondary-btn { width: 100%; max-width: 560px; padding: 12px 0; background: #fff; color: #666; border: 1px solid var(--border-color); border-radius: 25px; font-size: 1rem; cursor: pointer; margin-top: 10px; display: none; }
+
+        #ghost-input { position: fixed; top: -1000px; left: -1000px; opacity: 0; pointer-events: none; }
+        #l5-tip-toast { display: none; position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(70,130,180,0.92); color: #fff; padding: 12px 22px; border-radius: 22px; font-size: 1.25rem; z-index: 100; white-space: nowrap; pointer-events: none; text-align: center; font-weight: bold; }
+        #l5-hint-btn { display: none; position: fixed; bottom: 28px; right: 16px; z-index: 110; background: #4682b4; color: #fff; border: none; border-radius: 22px; padding: 10px 18px; font-size: 0.95rem; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.15); }
+
+        /* 段末小结页 */
+        #seg-summary { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 241, 230, 0.98); z-index: 220; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; }
+        #seg-summary h1 { font-size: 1.8rem; color: var(--primary-color); margin-bottom: 12px; letter-spacing: 2px; }
+        #seg-summary .seg-time { font-size: 1.05rem; color: #666; margin-bottom: 30px; }
+        #seg-summary .seg-time strong { color: var(--text-color); font-size: 1.2rem; }
+        .seg-btn { padding: 14px 36px; border-radius: 28px; font-size: 1.05rem; cursor: pointer; margin: 8px 0; border: none; width: 80%; max-width: 320px; font-family: inherit; }
+        .seg-btn-primary { background: var(--primary-color); color: #fff; }
+        .seg-btn-ghost { background: #fff; color: var(--primary-color); border: 1px solid var(--primary-color); }
+
+        /* 成功页（第1-4关用） */
+        #success-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 241, 230, 0.98); z-index: 200; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #success-page h1 { font-size: 2.2rem; color: var(--primary-color); margin-bottom: 20px; letter-spacing: 2px; }
+        .next-btn { padding: 15px 40px; background: var(--primary-color); color: #fff; border: none; border-radius: 30px; font-size: 1.1rem; cursor: pointer; margin-top: 20px; }
+
+        /* 成就卡 */
+        #achievement-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 241, 230, 0.98); z-index: 250; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        #achievement-card { width: 100%; max-width: 360px; background: linear-gradient(160deg, #ffffff 0%, #f7f5ec 100%); border: 1px solid var(--border-color); border-radius: 20px; padding: 34px 26px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
+        #ac-seal { font-size: 0.8rem; letter-spacing: 3px; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 20px; display: inline-block; padding: 3px 14px; margin-bottom: 20px; }
+        #ac-piece { font-size: 1.7rem; letter-spacing: 3px; color: var(--text-color); margin: 0 0 6px 0; font-weight: bold; }
+        #ac-author { font-size: 0.85rem; color: #999; margin-bottom: 22px; }
+        #ac-achieve { font-size: 1.1rem; color: var(--primary-color); font-weight: bold; margin-bottom: 16px; letter-spacing: 1px; }
+        #ac-time { font-size: 0.95rem; color: #666; margin-bottom: 22px; }
+        #ac-time strong { color: var(--text-color); font-size: 1.1rem; }
+        #ac-quote { font-size: 1rem; color: #555; line-height: 1.7; padding: 14px 8px; border-top: 1px dashed var(--border-color); border-bottom: 1px dashed var(--border-color); margin-bottom: 16px; }
+        #ac-date { font-size: 0.8rem; color: #aaa; letter-spacing: 1px; }
+        .ac-btn-group { display: flex; flex-direction: column; gap: 12px; align-items: center; width: 100%; max-width: 360px; margin-top: 20px; }
+        .ac-btn { width: 100%; padding: 13px 0; border-radius: 25px; font-size: 1rem; cursor: pointer; font-family: inherit; border: none; }
+        .ac-btn-primary { background: #4682b4; color: #fff; }
+        .ac-btn-ghost { background: #fff; color: var(--primary-color); border: 1px solid var(--primary-color); }
+
+        /* 报告页 */
+        #summary-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 999; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        #report-capture-area { background: #fff; padding: 25px 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        #summary-title { font-size: 1.8rem; color: var(--primary-color); text-align: center; margin-top: 0; letter-spacing: 2px; }
+        #summary-eval { text-align: center; color: #666; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.6; }
+        .report-para { line-height: 2.2; font-size: 1.05rem; text-align: justify; text-indent: 2em; margin: 15px 0; color: #444; }
+        .btn-group { display: flex; flex-direction: column; gap: 12px; align-items: center; padding-bottom: 40px; }
+    </style>
+</head>
+<body>
+    <!-- 成功页（第1-4关） -->
+    <div id="success-page">
+        <h1 id="success-title">挑战成功🎉</h1>
+        <p id="success-desc" style="margin-bottom: 30px; color: #666;">百尺竿头，更进一步</p>
+        <button class="next-btn" onclick="closeSuccessPage()" id="success-next-btn">进入下一关</button>
+    </div>
+
+    <!-- 段末小结页（第4、5关分段用） -->
+    <div id="seg-summary">
+        <h1 id="seg-summary-title">本段完成 🎉</h1>
+        <div class="seg-time" id="seg-summary-time"></div>
+        <button class="seg-btn seg-btn-primary" id="seg-next-btn" onclick="segGoNext()">进入下一段</button>
+        <button class="seg-btn seg-btn-ghost" id="seg-redo-btn" onclick="segRedo()">本段再练一遍</button>
+    </div>
+
+    <!-- 成就卡 -->
+    <div id="achievement-page">
+        <div id="achievement-card">
+            <span id="ac-seal">默写达成</span>
+            <h1 id="ac-piece">种树郭橐驼传</h1>
+            <div id="ac-author">柳宗元 〔唐〕</div>
+            <div id="ac-achieve">✦ 全篇默写达成 ✦</div>
+            <div id="ac-time">用时 <strong id="ac-time-val">--</strong></div>
+            <div id="ac-quote">突破自己的记录，就是成功者。</div>
+            <div id="ac-date">2026.01.01</div>
+        </div>
+        <div class="ac-btn-group">
+            <button class="ac-btn ac-btn-primary" onclick="saveAchievementCard()" id="ac-save-btn">💾 保存成就卡长图</button>
+            <button class="ac-btn ac-btn-ghost" onclick="openReportFromCard()">查看完整报告</button>
+        </div>
+    </div>
+
+    <div class="nav-header">
+        <a onclick="goToLevel(1)" class="back-link">← 目录</a>
+        <span id="level-title" style="font-size: 14px; color: #888;">正在练习：第一关</span>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-line"></div>
+        <div id="progress-active" class="progress-active"></div>
+        <div class="nodes">
+            <div class="node" onclick="goToLevel(1)">1</div>
+            <div class="node" onclick="goToLevel(2)">2</div>
+            <div class="node" onclick="goToLevel(3)">3</div>
+            <div class="node" onclick="goToLevel(4)">4</div>
+            <div class="node" onclick="goToLevel(5)">测</div>
+        </div>
+    </div>
+
+    <div id="game-area">
+        <h2>种树郭橐驼传</h2>
+        <div class="author">柳宗元 〔唐〕</div>
+        <div id="seg-hint"></div>
+        <div id="content-body"></div>
+
+        <div id="l4-container">
+            <select id="l4-seg-select" style="width:100%; padding:12px; font-size:1.05rem; margin-bottom:14px; border:2px solid var(--border-color); border-radius:8px; outline:none; background:#fff; color:var(--text-color); cursor:pointer; font-family:inherit;"></select>
+            <div id="l4-seg-hint"></div>
+            <div id="l4-trans"></div>
+            <textarea id="l4-textarea" placeholder="🎤 建议唤起语音输入本段内容..."></textarea>
+            <div id="l4-result-area"></div>
+            <button id="l4-check-btn" class="action-btn" onclick="checkL4Seg()">核查本段</button>
+            <button id="l4-reedit-btn" class="secondary-btn" onclick="reeditL4Seg()">🔄 错位严重？重新编辑本段</button>
+        </div>
+    </div>
+
+    <div id="options-container"></div>
+
+    <input type="text" id="ghost-input" autocomplete="off" autocorrect="off" spellcheck="false" />
+    <div id="l5-tip-toast"></div>
+    <button id="l5-hint-btn" onclick="showL5Hint()">💡 提示</button>
+
+    <!-- 报告页 -->
+    <div id="summary-overlay">
+        <div id="report-capture-area">
+            <h1 id="summary-title">种树郭橐驼传·默写报告</h1>
+            <div id="summary-eval"></div>
+            <div id="report-text-container"></div>
+        </div>
+        <div class="btn-group">
+            <button class="secondary-btn" style="display:block; border-color: #4682b4; color: #4682b4; margin-top:0;" onclick="backToAchievement()">🏅 返回成就卡（可截图）</button>
+            <button id="download-btn" class="action-btn" onclick="downloadReport()" style="background: #4682b4; margin-top:0;">💾 保存报告为长图</button>
+            <button class="secondary-btn" style="display:block; border-color: var(--primary-color); color: var(--primary-color); margin-top:0;" onclick="goToLevel(5)">🔄 再测一次</button>
+            <button class="secondary-btn" style="display:block; margin-top:0;" onclick="goToLevel(1)">🏠 返回目录 (重置进度)</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== 数据 =====
+        // 第1-3关：整篇连续挖空，用 5 个自然段呈现
+        const rawParas = [
+            "郭橐驼，不知始何名。病偻，隆然伏行，有类橐驼者，故乡人号之“驼”。驼闻之曰：“甚善。名我固当。”因舍其名，亦自谓“橐驼”云。",
+            "其乡曰丰乐乡，在长安西。驼业种树，凡长安豪富人为观游及卖果者，皆争迎取养。视驼所种树，或移徙，无不活；且硕茂，早实以蕃。他植者虽窥伺效慕，莫能如也。",
+            "有问之，对曰：“橐驼非能使木寿且孳也，能顺木之天，以致其性焉尔。凡植木之性，其本欲舒，其培欲平，其土欲故，其筑欲密。既然已，勿动勿虑，去不复顾。其莳也若子，其置也若弃，则其天者全而其性得矣。故吾不害其长而已，非有能硕茂之也；不抑耗其实而已，非有能早而蕃之也。他植者则不然，根拳而土易，其培之也，若不过焉则不及。苟有能反是者，则又爱之太恩，忧之太勤。旦视而暮抚，已去而复顾。甚者，爪其肤以验其生枯，摇其本以观其疏密，而木之性日以离矣。虽曰爱之，其实害之；虽曰忧之，其实仇之；故不我若也。吾又何能为哉？”",
+            "问者曰：“以子之道，移之官理，可乎？”驼曰：“我知种树而已，理，非吾业也。然吾居乡，见长人者好烦其令，若甚怜焉，而卒以祸。旦暮吏来而呼曰：‘官命促尔耕，勖尔植，督尔获，早缫而绪，早织而缕，字而幼孩，遂而鸡豚。’鸣鼓而聚之，击木而召之。吾小人辍飧饔以劳吏者，且不得暇，又何以蕃吾生而安吾性耶？故病且怠。若是，则与吾业者其亦有类乎？”",
+            "问者曰：“嘻，不亦善夫！吾问养树，得养人术。”传其事以为官戒也。"
+        ];
+
+        // 第4、5关：七段（第三段拆上下、第四段拆上下）
+        const segments = [
+            { text: "郭橐驼，不知始何名。病偻，隆然伏行，有类橐驼者，故乡人号之“驼”。驼闻之曰：“甚善。名我固当。”因舍其名，亦自谓“橐驼”云。",
+              trans: "郭橐驼，不知道他最初叫什么名字。他患了脊背弯曲的病，脊背突起弯腰行走，就像骆驼一样，所以乡里人称他“驼”。橐驼听说后，说：“很好，这样称呼我确实恰当。”于是舍弃原名，也自称起“橐驼”来。" },
+            { text: "其乡曰丰乐乡，在长安西。驼业种树，凡长安豪富人为观游及卖果者，皆争迎取养。视驼所种树，或移徙，无不活；且硕茂，早实以蕃。他植者虽窥伺效慕，莫能如也。",
+              trans: "他的家乡叫丰乐乡，在长安城西。橐驼以种树为业，凡是长安城里经营园林游览和卖果子的豪富人家，都争着迎接雇佣他。看橐驼所种的树，即使移植，没有不成活的；而且高大茂盛，结果早而多。别的种树人即使暗中观察效仿，也比不上他。" },
+            { text: "有问之，对曰：“橐驼非能使木寿且孳也，能顺木之天，以致其性焉尔。凡植木之性，其本欲舒，其培欲平，其土欲故，其筑欲密。既然已，勿动勿虑，去不复顾。其莳也若子，其置也若弃，则其天者全而其性得矣。故吾不害其长而已，非有能硕茂之也；不抑耗其实而已，非有能早而蕃之也。",
+              trans: "有人问他，他回答说：“我并非能使树木活得久又长得快，只是能顺应树木的天性，使它的本性充分发展罢了。凡种树的方法：根要舒展，培土要均匀，用原来的旧土，筑土要紧实。这样做完后，就不要再动、再忧虑，离开后不再看顾。栽种时像对待子女，栽好后像丢弃它，那么树的天性就保全、本性就得到了。所以我只是不妨碍它生长，并非能使它高大茂盛；只是不抑制损耗它的果实，并非能使它结果早又多。" },
+            { text: "他植者则不然，根拳而土易，其培之也，若不过焉则不及。苟有能反是者，则又爱之太恩，忧之太勤。旦视而暮抚，已去而复顾。甚者，爪其肤以验其生枯，摇其本以观其疏密，而木之性日以离矣。虽曰爱之，其实害之；虽曰忧之，其实仇之；故不我若也。吾又何能为哉？”",
+              trans: "别的种树人却不这样：树根拳曲，又换了生土；培土不是过多就是不足。如果有能与此相反的人，又爱得太过、忧得太勤，早晚去看、抚摸，离开了又回头看顾。更严重的，掐破树皮验它死活，摇动树干看培土松紧，于是树的本性一天天丧失了。虽说是爱它，其实是害它；虽说是忧它，其实是仇它。所以他们都不如我。我又有什么本领呢？”" },
+            { text: "问者曰：“以子之道，移之官理，可乎？”驼曰：“我知种树而已，理，非吾业也。然吾居乡，见长人者好烦其令，若甚怜焉，而卒以祸。",
+              trans: "问的人说：“把你种树的道理，移用到做官治民上，可以吗？”橐驼说：“我只知道种树罢了，治民不是我的职业。但我住在乡里，见那些当官的喜欢不断发号施令，好像很爱百姓，却终于害了他们。" },
+            { text: "旦暮吏来而呼曰：‘官命促尔耕，勖尔植，督尔获，早缫而绪，早织而缕，字而幼孩，遂而鸡豚。’鸣鼓而聚之，击木而召之。吾小人辍飧饔以劳吏者，且不得暇，又何以蕃吾生而安吾性耶？故病且怠。若是，则与吾业者其亦有类乎？”",
+              trans: "早晚有小吏跑来喊：‘官府命令催促你们耕地，勉励你们种植，督促你们收获，早些缫丝，早些织布，养好你们的孩子，喂好你们的鸡猪。’击鼓聚集大家，敲梆召唤大家。我们小百姓停下吃饭去慰劳小吏尚且没空，又怎能使人口兴旺、生活安定呢？所以既困苦又疲惫。像这样，它与我种树的行当大概也有相似处吧？”" },
+            { text: "问者曰：“嘻，不亦善夫！吾问养树，得养人术。”传其事以为官戒也。",
+              trans: "问的人说：“不也很好吗！我问种树，得到了治民的方法。”我为这件事作传，把它作为官吏的鉴戒。" }
+        ];
+
+        const fullTextStr = rawParas.join("");
+        // 标点过滤表：已新增单引号 ‘ ’（多层引号嵌套）
+        const puncRegex = /[，。；？、〔〕“”‘’\s！!：:《》〈〉（）()]/;
+        const charPool = [...new Set(fullTextStr.replace(new RegExp(puncRegex, 'g'), "").split(''))];
+
+        // 第1-3关易错字混淆表（《种树》专属，已人工审核定稿；精准干扰必出，不足随机补足）
+        const confusionMap = {
+            "橐": ["蠹"], "偻": ["缕", "娄"], "固": ["故"], "伏": ["扶"], "故": ["固"],
+            "徙": ["徒", "陡"], "蕃": ["繁", "番"], "伺": ["视", "祠"], "慕": ["幕", "暮"],
+            "孳": ["兹"], "致": ["至", "制"], "舒": ["疏"], "已": ["己"], "密": ["秘"],
+            "莳": ["侍"], "复": ["赴"], "拳": ["蜷", "卷"], "抚": ["俯", "拊"], "爪": ["笊", "抓"],
+            "疏": ["舒"], "仇": ["雠"], "烦": ["繁"], "卒": ["猝"], "缫": ["巢"], "而": ["尔"],
+            "字": ["孳"], "遂": ["逐"], "豚": ["豕"], "辍": ["缀", "掇"], "飧": ["餐"],
+            "饔": ["雍", "壅"], "暇": ["瑕", "遐"], "怠": ["殆", "迨"], "戒": ["诫"]
+            // 注：「缕」原干扰字生僻已删，走纯随机。
+        };
+
+        let currentLevel = 1;
+        let allBlanks = [];
+        let activeIndex = 0;
+        let globalErrorCount = 0;
+
+        function goToLevel(l) {
+            ['summary-overlay','success-page','achievement-page','seg-summary'].forEach(id => document.getElementById(id).style.display = 'none');
+            currentLevel = l;
+            initLevel(l);
+        }
+
+        function handleGlobalError() {
+            globalErrorCount++;
+            if (globalErrorCount >= 15 && currentLevel <= 3) {
+                setTimeout(() => {
+                    alert("哎呀，遇到瓶颈啦！本关已失误 15 次。“温故而知新”，先退回上一关稳扎稳打吧！");
+                    goToLevel(currentLevel > 1 ? currentLevel - 1 : 1);
+                }, 100);
+            }
+        }
+
+        function initLevel(level) {
+            globalErrorCount = 0;
+            const body = document.getElementById('content-body');
+            const l4Container = document.getElementById('l4-container');
+            const opts = document.getElementById('options-container');
+            const ghostInput = document.getElementById('ghost-input');
+
+            body.innerHTML = '';
+            body.style.display = 'block';
+            l4Container.style.display = 'none';
+            opts.style.display = 'none';
+            ghostInput.style.display = 'none';
+            document.getElementById('l5-tip-toast').style.display = 'none';
+            document.getElementById('l5-hint-btn').style.display = 'none';
+            document.getElementById('seg-hint').innerText = '';
+            allBlanks = [];
+            activeIndex = 0;
+
+            document.getElementById('level-title').innerText = level === 5 ? "终极测评" : `正在练习：第${level}关`;
+            document.querySelectorAll('.node').forEach((n, i) => n.classList.toggle('active', i < level));
+            document.getElementById('progress-active').style.width = (level - 1) * 25 + '%';
+
+            if (level <= 3) {
+                opts.style.display = 'flex';
+                renderStandardBody(level);
+                refreshUI_L1to3();
+            } else if (level === 4) {
+                body.style.display = 'none';
+                l4Container.style.display = 'flex';
+                initL4();
+            } else if (level === 5) {
+                ghostInput.style.display = 'block';
+                document.getElementById('l5-hint-btn').style.display = 'block';
+                initL5();
+            }
+        }
+
+        // ===== 第1-3关：整篇连续挖空 + 易错字干扰 =====
+        function renderStandardBody(level) {
+            const body = document.getElementById('content-body');
+            const gapRate = [0.4, 0.6, 0.8][level - 1];
+            rawParas.forEach((para) => {
+                const p = document.createElement('p');
+                p.className = 'content-para';
+                para.split('').forEach(char => {
+                    if (puncRegex.test(char)) {
+                        p.appendChild(document.createTextNode(char));
+                    } else if (Math.random() < gapRate) {
+                        const span = document.createElement('span');
+                        span.className = 'blank';
+                        span.dataset.ans = char;
+                        span.innerText = char;
+                        p.appendChild(span);
+                        allBlanks.push(span);
+                    } else {
+                        p.appendChild(document.createTextNode(char));
+                    }
+                });
+                body.appendChild(p);
+            });
+        }
+
+        function refreshUI_L1to3() {
+            if (activeIndex >= allBlanks.length) { triggerSuccess(); return; }
+            allBlanks.forEach((b, i) => {
+                b.classList.remove('active');
+                if (i === activeIndex) { b.classList.add('active'); b.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            });
+            const correctChar = allBlanks[activeIndex].dataset.ans;
+            const preset = (confusionMap[correctChar] || []).filter(c => c !== correctChar);
+            const need = 3 - preset.length;
+            const used = new Set([correctChar, ...preset]);
+            const randomFill = charPool.filter(c => !used.has(c)).sort(() => Math.random() - 0.5).slice(0, Math.max(0, need));
+            const options = [correctChar, ...preset, ...randomFill].sort(() => Math.random() - 0.5);
+
+            const optsContainer = document.getElementById('options-container');
+            optsContainer.innerHTML = '';
+            options.forEach(char => {
+                const btn = document.createElement('div');
+                btn.className = 'option-btn';
+                btn.innerText = char;
+                btn.onclick = () => {
+                    if (char === correctChar) {
+                        allBlanks[activeIndex].innerText = char;
+                        allBlanks[activeIndex].className = 'blank filled';
+                        activeIndex++;
+                        refreshUI_L1to3();
+                    } else {
+                        allBlanks[activeIndex].classList.add('wrong');
+                        setTimeout(() => allBlanks[activeIndex].classList.remove('wrong'), 400);
+                        handleGlobalError();
+                    }
+                };
+                optsContainer.appendChild(btn);
+            });
+        }
+
+        // ===== 第4关：分段录入核对（七段，段末小结，可反复练，不计时）=====
+        let l4SegIndex = 0;
+        let l4ParaData = [];
+        let l4SavedText = [];
+        let l4Completed = [];
+
+        function initL4() {
+            l4SegIndex = 0;
+            l4SavedText = new Array(segments.length).fill("");
+            l4Completed = new Array(segments.length).fill(false);
+            buildL4Select();
+            renderL4Seg();
+        }
+
+        function buildL4Select() {
+            const sel = document.getElementById('l4-seg-select');
+            sel.innerHTML = '';
+            segments.forEach((_, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = (l4Completed[i] ? '✅ ' : '') + `第 ${i + 1} / ${segments.length} 段`;
+                sel.appendChild(opt);
+            });
+            sel.value = l4SegIndex;
+            sel.onchange = (e) => { l4SegIndex = parseInt(e.target.value); renderL4Seg(); };
+        }
+
+        function renderL4Seg() {
+            buildL4Select();
+            document.getElementById('l4-seg-hint').innerText = `第 ${l4SegIndex + 1} / ${segments.length} 段（可在上方下拉框自由选段反复练）`;
+            document.getElementById('l4-trans').innerText = "译文参考：" + segments[l4SegIndex].trans;
+            document.getElementById('l4-textarea').style.display = 'block';
+            document.getElementById('l4-textarea').value = l4SavedText[l4SegIndex];
+            document.getElementById('l4-result-area').style.display = 'none';
+            document.getElementById('l4-check-btn').style.display = 'block';
+            document.getElementById('l4-reedit-btn').style.display = 'none';
+        }
+
+        function reeditL4Seg() {
+            document.getElementById('l4-textarea').style.display = 'block';
+            document.getElementById('l4-check-btn').style.display = 'block';
+            document.getElementById('l4-result-area').style.display = 'none';
+            document.getElementById('l4-reedit-btn').style.display = 'none';
+            document.getElementById('l4-textarea').value = l4SavedText[l4SegIndex];
+            document.getElementById('l4-textarea').focus();
+        }
+
+        function checkL4Seg() {
+            const raw = segments[l4SegIndex].text;
+            const inputVal = document.getElementById('l4-textarea').value;
+            l4SavedText[l4SegIndex] = inputVal;
+            const inputChinese = inputVal.replace(new RegExp(puncRegex, 'g'), "").split('');
+            if (inputChinese.length === 0) { alert("输入为空，请先录入本段内容。"); return; }
+
+            l4ParaData = [];
+            let ptr = 0;
+            raw.split('').forEach(char => {
+                if (puncRegex.test(char)) {
+                    l4ParaData.push({ isPunct: true, char });
+                } else {
+                    const userChar = ptr < inputChinese.length ? inputChinese[ptr] : "";
+                    l4ParaData.push({ isPunct: false, targetChar: char, userChar, isCorrect: userChar === char });
+                    ptr++;
+                }
+            });
+            document.getElementById('l4-textarea').style.display = 'none';
+            document.getElementById('l4-check-btn').style.display = 'none';
+            document.getElementById('l4-reedit-btn').style.display = 'block';
+            renderL4Result();
+        }
+
+        function renderL4Result() {
+            const area = document.getElementById('l4-result-area');
+            area.style.display = 'block';
+            area.innerHTML = '';
+            let allCorrect = true;
+            l4ParaData.forEach((item, index) => {
+                if (item.isPunct) { area.appendChild(document.createTextNode(item.char)); return; }
+                const span = document.createElement('span');
+                span.dataset.index = index;
+                if (item.isCorrect) { span.className = 'l4-char-green'; span.innerText = item.targetChar; }
+                else {
+                    allCorrect = false;
+                    span.className = item.userChar ? 'l4-char-red' : 'l4-char-miss';
+                    span.innerText = item.userChar || "空";
+                    span.onclick = () => openL4Inline(index, span);
+                }
+                area.appendChild(span);
+            });
+            if (allCorrect) {
+                setTimeout(() => {
+                    document.getElementById('l4-reedit-btn').style.display = 'none';
+                    l4Completed[l4SegIndex] = true;
+                    showSegSummary(4, l4SegIndex, null);
+                }, 300);
+            }
+        }
+
+        function openL4Inline(index, spanNode) {
+            const input = document.createElement('input');
+            input.type = 'text'; input.className = 'l4-inline-input';
+            input.setAttribute('autocomplete','off'); input.setAttribute('autocorrect','off'); input.setAttribute('spellcheck','false');
+            spanNode.parentNode.replaceChild(input, spanNode);
+            input.focus();
+            input.oninput = () => {
+                const val = input.value.replace(new RegExp(puncRegex, 'g'), "");
+                if (val.length >= 1) checkL4Inline(index, val[val.length - 1], input);
+            };
+        }
+
+        function checkL4Inline(index, val, inputNode) {
+            if (val === l4ParaData[index].targetChar) {
+                l4ParaData[index].userChar = val;
+                l4ParaData[index].isCorrect = true;
+                renderL4Result();
+            } else {
+                inputNode.value = '';
+                inputNode.classList.add('wrong');
+                setTimeout(() => inputNode.classList.remove('wrong'), 400);
+            }
+        }
+
+        // ===== 第5关：手写静默 + 七段闯关 =====
+        const cjkRegex = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g;
+        let l5SegIndex = 0;
+        let l5SegAnswer = "";
+        let l5SegProgress = "";
+        let l5SegBlanks = [];
+        let l5SegStart = null;          // 本次尝试起点（写下第一个字才开始）
+        let l5BestTimes = [];           // 每段最快用时（秒）
+        let l5TotalErrors = 0;
+        let l5Composing = false;
+
+        function initL5() {
+            l5SegIndex = 0;
+            l5BestTimes = new Array(segments.length).fill(null);
+            l5TotalErrors = 0;
+            bindGhostInput();
+            loadL5Seg();
+        }
+
+        function loadL5Seg() {
+            const body = document.getElementById('content-body');
+            body.innerHTML = '';
+            l5SegBlanks = [];
+            l5SegProgress = "";
+            l5SegStart = null;
+            document.getElementById('seg-hint').innerHTML = `终极测评 · 第 ${l5SegIndex + 1} / ${segments.length} 段（手写输入）<div class="l5-subtip">✍️ 一鼓作气完成，中途离开则计时重置<br><span class="l5-subtip-weak">（可反复练习，只计最短用时）</span></div>`;
+
+            const segText = segments[l5SegIndex].text;
+            l5SegAnswer = segText.replace(new RegExp(puncRegex, 'g'), "");
+            const p = document.createElement('p');
+            p.className = 'content-para';
+            segText.split('').forEach(char => {
+                if (puncRegex.test(char)) { p.appendChild(document.createTextNode(char)); return; }
+                const span = document.createElement('span');
+                span.className = 'blank';
+                span.dataset.ans = char;
+                span.innerText = char;
+                p.appendChild(span);
+                l5SegBlanks.push(span);
+            });
+            body.appendChild(p);
+            renderL5Seg(0);
+            const gi = document.getElementById('ghost-input');
+            gi.value = '';
+            setTimeout(() => gi.focus(), 200);
+        }
+
+        function renderL5Seg(progressLen) {
+            l5SegBlanks.forEach((b, i) => {
+                b.classList.remove('active', 'wrong');
+                if (i < progressLen) {
+                    b.className = 'blank filled'; b.style.color = ''; b.innerText = b.dataset.ans;
+                } else {
+                    b.className = 'blank'; b.style.color = ''; b.innerText = b.dataset.ans;
+                    if (i === progressLen) { b.classList.add('active'); b.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                }
+            });
+        }
+
+        function bindGhostInput() {
+            const gi = document.getElementById('ghost-input');
+            document.getElementById('game-area').onclick = () => { if (currentLevel === 5) gi.focus(); };
+            gi.oncompositionstart = () => { l5Composing = true; };
+            gi.oncompositionend = () => { l5Composing = false; validateL5(); };
+            gi.oninput = (e) => { if (l5Composing || e.isComposing) return; validateL5(); };
+        }
+
+        function validateL5() {
+            if (currentLevel !== 5) return;
+            const gi = document.getElementById('ghost-input');
+            const rawVal = (gi.value.match(cjkRegex) || []).join("");
+            if (!rawVal) return;
+
+            let newProgress = null;
+            if (l5SegAnswer.startsWith(rawVal)) {
+                if (rawVal.length >= l5SegProgress.length) newProgress = rawVal;
+                else { gi.value = l5SegProgress; return; }
+            } else {
+                const remainder = l5SegAnswer.substring(l5SegProgress.length);
+                if (remainder.startsWith(rawVal)) newProgress = l5SegProgress + rawVal;
+                else if (rawVal.charAt(rawVal.length - 1) === l5SegAnswer.charAt(l5SegProgress.length)) newProgress = l5SegProgress + rawVal.charAt(rawVal.length - 1);
+            }
+
+            if (newProgress !== null) {
+                if (l5SegStart === null) l5SegStart = Date.now();   // 写对第一个字才开始计时（本次尝试）
+                l5SegProgress = newProgress;
+                gi.value = newProgress;
+                renderL5Seg(l5SegProgress.length);
+                if (l5SegProgress.length >= l5SegAnswer.length) {   // 本段完成
+                    gi.blur();
+                    const attemptSec = l5SegStart ? Math.round((Date.now() - l5SegStart) / 1000) : 0;
+                    // 哲学乙：保留本段最快用时（反复练只取最快那遍）
+                    if (l5BestTimes[l5SegIndex] === null || attemptSec < l5BestTimes[l5SegIndex]) l5BestTimes[l5SegIndex] = attemptSec;
+                    showSegSummary(5, l5SegIndex, l5BestTimes[l5SegIndex]);
+                }
+            } else {
+                // 判错 / iOS 临时字：静默撤回，干净心流
+                l5TotalErrors++;
+                gi.value = l5SegProgress;
+            }
+        }
+
+        // 提示：只显示当前该填的一个字（保住记忆点）
+        function showL5Hint() {
+            if (currentLevel !== 5) return;
+            const nextChar = l5SegAnswer.charAt(l5SegProgress.length);
+            if (!nextChar) return;
+            const toast = document.getElementById('l5-tip-toast');
+            toast.innerText = `💡 下一个字：「${nextChar}」`;
+            toast.style.display = 'block';
+            clearTimeout(toast._t);
+            toast._t = setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
+        // ===== 段末小结页（第4、5关共用）=====
+        let segSummaryLevel = 4;
+        function showSegSummary(level, segIndex, bestSec) {
+            segSummaryLevel = level;
+            const page = document.getElementById('seg-summary');
+            const title = document.getElementById('seg-summary-title');
+            const timeEl = document.getElementById('seg-summary-time');
+            const nextBtn = document.getElementById('seg-next-btn');
+            const redoBtn = document.getElementById('seg-redo-btn');
+
+            const isLast = segIndex === segments.length - 1;
+            title.innerText = `第 ${segIndex + 1} 段 · 完成 🎉`;
+
+            if (level === 5) {
+                const m = Math.floor(bestSec / 60), s = bestSec % 60;
+                timeEl.innerHTML = `本段最快用时：<strong>${m > 0 ? m + ' 分 ' : ''}${s} 秒</strong>`;
+                redoBtn.style.display = 'block';
+            } else {
+                timeEl.innerHTML = `本段录入核对无误，继续保持！`;
+                redoBtn.style.display = 'block';
+            }
+
+            nextBtn.innerText = isLast
+                ? (level === 5 ? '🏅 完成全篇 · 查看成就' : '✅ 完成本板块')
+                : '进入下一段';
+            page.style.display = 'flex';
+        }
+
+        function segGoNext() {
+            document.getElementById('seg-summary').style.display = 'none';
+            const isLast = (segSummaryLevel === 5 ? l5SegIndex : l4SegIndex) === segments.length - 1;
+            if (segSummaryLevel === 5) {
+                if (isLast) { showAchievementCard(); return; }
+                l5SegIndex++;
+                loadL5Seg();
+            } else {
+                if (isLast) { triggerL4Done(); return; }
+                l4SegIndex++;
+                renderL4Seg();
+            }
+        }
+
+        function segRedo() {
+            document.getElementById('seg-summary').style.display = 'none';
+            if (segSummaryLevel === 5) {
+                loadL5Seg();   // 重练本段：进度清零、计时重置；最快用时已保留
+            } else {
+                l4SavedText[l4SegIndex] = "";
+                renderL4Seg();
+            }
+        }
+
+        function triggerL4Done() {
+            const modal = document.getElementById('success-page');
+            document.getElementById('success-title').innerText = "第四关完成🎉";
+            document.getElementById('success-desc').innerText = "七段语音默写全部通过，可以进入终极测评了。";
+            document.getElementById('success-next-btn').innerText = "进入终极测评";
+            modal.style.display = 'flex';
+            fireConfetti();
+        }
+
+        // ===== 成功页（第1-3关）=====
+        function triggerSuccess() {
+            const modal = document.getElementById('success-page');
+            document.getElementById('success-title').innerText = "挑战成功🎉";
+            document.getElementById('success-desc').innerText = "百尺竿头，更进一步";
+            document.getElementById('success-next-btn').innerText = "进入下一关";
+            modal.style.display = 'flex';
+            fireConfetti();
+        }
+
+        function closeSuccessPage() {
+            document.getElementById('success-page').style.display = 'none';
+            if (currentLevel < 5) goToLevel(currentLevel + 1);
+        }
+
+        // ===== 成就卡 =====
+        function showAchievementCard() {
+            const totalSec = l5BestTimes.reduce((a, b) => a + (b || 0), 0);
+            const m = Math.floor(totalSec / 60), s = totalSec % 60;
+            document.getElementById('ac-time-val').innerText = m > 0 ? `${m} 分 ${s} 秒` : `${s} 秒`;
+            const now = new Date(), pad = n => String(n).padStart(2, '0');
+            document.getElementById('ac-date').innerText = `${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())}`;
+            document.getElementById('achievement-page').style.display = 'flex';
+            fireConfettiBurst();
+        }
+
+        function openReportFromCard() {
+            document.getElementById('achievement-page').style.display = 'none';
+            showReport();
+        }
+
+        function backToAchievement() {
+            document.getElementById('summary-overlay').style.display = 'none';
+            document.getElementById('achievement-page').style.display = 'flex';
+        }
+
+        function saveAchievementCard() {
+            const el = document.getElementById('achievement-card');
+            const btn = document.getElementById('ac-save-btn');
+            if (typeof html2canvas !== 'function') { alert('图片组件未加载，请检查网络后重试'); return; }
+            const orig = btn.innerHTML;
+            btn.innerHTML = '⏳ 正在生成…'; btn.style.opacity = '0.7'; btn.disabled = true;
+            html2canvas(el, { scale: 2, backgroundColor: null }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = '种树郭橐驼传-成就卡.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerHTML = '✅ 已保存';
+                setTimeout(() => { btn.innerHTML = orig; btn.style.opacity = '1'; btn.disabled = false; }, 2000);
+            }).catch(() => { alert('生成失败，请重试'); btn.innerHTML = orig; btn.style.opacity = '1'; btn.disabled = false; });
+        }
+
+        // ===== 报告页 =====
+        function showReport() {
+            const overlay = document.getElementById('summary-overlay');
+            const evalDiv = document.getElementById('summary-eval');
+            const textContainer = document.getElementById('report-text-container');
+            overlay.style.display = 'block';
+            textContainer.innerHTML = '';
+            const totalSec = l5BestTimes.reduce((a, b) => a + (b || 0), 0);
+            const m = Math.floor(totalSec / 60), s = totalSec % 60;
+            const timeStr = (m > 0 ? m + ' 分 ' : '') + s + ' 秒';
+
+            if (l5TotalErrors === 0) {
+                evalDiv.innerHTML = `<strong>惊为天人！</strong><br>全程顺畅、一次未卡，用时 ${timeStr}。`;
+                evalDiv.style.color = "var(--primary-color)";
+            } else if (l5TotalErrors <= 12) {
+                evalDiv.innerHTML = `全篇默写达成，用时 ${timeStr}，共 ${l5TotalErrors} 次落笔未中。<br>瑕不掩瑜，基础非常扎实！`;
+                evalDiv.style.color = "var(--primary-color)";
+            } else {
+                evalDiv.innerHTML = `全篇默写达成，用时 ${timeStr}，共 ${l5TotalErrors} 次落笔未中。<br>建议对照原文复看卡顿处，再练一遍。`;
+                evalDiv.style.color = "var(--text-color)";
+            }
+            rawParas.forEach(para => {
+                const p = document.createElement('p');
+                p.className = 'report-para';
+                p.innerText = para;
+                textContainer.appendChild(p);
+            });
+        }
+
+        function downloadReport() {
+            const element = document.getElementById('report-capture-area');
+            const btn = document.getElementById('download-btn');
+            if (typeof html2canvas !== 'function') { alert('图片组件未加载，请检查网络后重试'); return; }
+            const origText = btn.innerHTML;
+            btn.innerHTML = "⏳ 正在生成长图…"; btn.style.opacity = '0.7'; btn.disabled = true;
+            html2canvas(element, { scale: 2, backgroundColor: "#fff" }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = '种树郭橐驼传-默写报告.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerHTML = "✅ 保存成功";
+                setTimeout(() => { btn.innerHTML = origText; btn.style.opacity = '1'; btn.disabled = false; }, 2000);
+            }).catch(() => { alert("生成图片失败，请重试"); btn.innerHTML = origText; btn.style.opacity = '1'; btn.disabled = false; });
+        }
+
+        // ===== 礼花 =====
+        function fireConfetti() {
+            if (typeof confetti !== 'function') return;
+            try {
+                var end = Date.now() + 2500;
+                (function frame() {
+                    confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#6a8b47', '#f4a460', '#4682b4', '#d9534f'] });
+                    confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#6a8b47', '#f4a460', '#4682b4', '#d9534f'] });
+                    if (Date.now() < end) requestAnimationFrame(frame);
+                }());
+            } catch (e) {}
+        }
+
+        // 成就时刻：三点齐炸（彩带更大、飘落更慢更久）
+        function fireConfettiBurst() {
+            if (typeof confetti !== 'function') return;
+            try {
+                const colors = ['#6a8b47', '#f4a460', '#4682b4', '#d9534f', '#9b59b6'];
+                const cfg = { particleCount: 160, spread: 120, startVelocity: 34, gravity: 0.04, decay: 0.93, ticks: 680, scalar: 2.4, colors };
+                confetti({ ...cfg, origin: { x: 0.5,  y: 0.4 } });   // 主炸
+                confetti({ ...cfg, origin: { x: 0.13, y: 0.6 } });   // 左辅炸
+                confetti({ ...cfg, origin: { x: 0.86, y: 0.9 } });   // 右辅炸
+            } catch (e) {}
+        }
+
+        initLevel(1);
+    </script>
+</body>
+</html>

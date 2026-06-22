@@ -286,9 +286,9 @@
 
         function handleGlobalError() {
             globalErrorCount++;
-            if (globalErrorCount >= 15 && currentLevel <= 3) {
+            if (globalErrorCount >= 20 && currentLevel <= 3) {
                 setTimeout(() => {
-                    alert("哎呀，好像遇到瓶颈啦！当前关卡已经失误 15 次。“温故而知新”，咱们先退回上一关稳扎稳打吧！");
+                    alert("哎呀，好像遇到瓶颈啦！当前关卡已经失误 20 次。“温故而知新”，咱们先退回上一关稳扎稳打吧！");
                     goToLevel(currentLevel > 1 ? currentLevel - 1 : 1);
                 }, 100);
             }

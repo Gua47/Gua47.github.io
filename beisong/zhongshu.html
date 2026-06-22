@@ -283,7 +283,7 @@
 
         function handleGlobalError() {
             globalErrorCount++;
-            if (globalErrorCount >= 15 && currentLevel <= 3) {
+            if (globalErrorCount >= 20 && currentLevel <= 3) {
                 setTimeout(() => {
                     alert("哎呀，遇到瓶颈啦！本关已失误 15 次。“温故而知新”，先退回上一关稳扎稳打吧！");
                     goToLevel(currentLevel > 1 ? currentLevel - 1 : 1);

@@ -93,7 +93,19 @@
         .action-btn { width: 100%; max-width: 560px; padding: 12px 0; background: var(--primary-color); color: #fff; border: none; border-radius: 25px; font-size: 1.1rem; cursor: pointer; margin-top: 10px; transition: opacity 0.3s; }
         .secondary-btn { width: 100%; max-width: 560px; padding: 12px 0; background: #fff; color: #666; border: 1px solid var(--border-color); border-radius: 25px; font-size: 1rem; cursor: pointer; margin-top: 10px; display: none; }
 
-        #ghost-input { position: fixed; top: -1000px; left: -1000px; opacity: 0; pointer-events: none; }
+        #ghost-input {
+    position: fixed;
+    left: 50%;
+    bottom: 8px;
+    width: 1px;
+    height: 1px;
+    opacity: 0.01;
+    border: none;
+    background: transparent;
+    color: transparent;
+    caret-color: transparent;
+    z-index: -1;
+}
         #l5-tip-toast { display: none; position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(70,130,180,0.92); color: #fff; padding: 12px 22px; border-radius: 22px; font-size: 1.25rem; z-index: 100; white-space: nowrap; pointer-events: none; text-align: center; font-weight: bold; }
         #l5-hint-btn { display: none; position: fixed; bottom: 28px; right: 16px; z-index: 110; background: #4682b4; color: #fff; border: none; border-radius: 22px; padding: 10px 18px; font-size: 0.95rem; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.15); }
 
@@ -570,48 +582,145 @@
         }
 
         function bindGhostInput() {
-            const gi = document.getElementById('ghost-input');
-            document.getElementById('game-area').onclick = () => { if (currentLevel === 5) gi.focus(); };
-            gi.oncompositionstart = () => { l5Composing = true; };
-            gi.oncompositionend = () => { l5Composing = false; validateL5(); };
-            gi.oninput = (e) => { if (l5Composing || e.isComposing) return; validateL5(); };
+    const gi = document.getElementById('ghost-input');
+
+    document.getElementById('game-area').onclick = () => {
+        if (currentLevel === 5) gi.focus();
+    };
+
+    gi.oncompositionstart = () => {
+        l5Composing = true;
+    };
+
+    gi.oncompositionupdate = (e) => {
+        validateL5(e.data || "", { countError: false });
+    };
+
+    gi.oncompositionend = (e) => {
+        l5Composing = false;
+        validateL5(e.data || "");
+    };
+
+    gi.oninput = (e) => {
+        validateL5(e.data || "");
+    };
+}
+      function validateL5(extraText = "", options = {}) {
+    if (currentLevel !== 5) return;
+
+    const gi = document.getElementById('ghost-input');
+    const countError = options.countError !== false;
+
+    const fromInput = (gi.value.match(cjkRegex) || []).join("");
+    const fromEvent = (String(extraText).match(cjkRegex) || []).join("");
+
+    const candidates = [];
+    if (fromInput) candidates.push(fromInput);
+    if (fromEvent) candidates.push(fromEvent);
+
+    if (fromInput && fromEvent && fromInput !== fromEvent) {
+        candidates.push(fromInput + fromEvent);
+    }
+
+    if (candidates.length === 0) {
+        gi.value = l5SegProgress;
+        return;
+    }
+
+    let bestProgress = null;
+    let isDuplicateSubmit = false;
+
+    candidates.forEach(rawVal => {
+        let candidateProgress = null;
+
+        if (l5SegAnswer.startsWith(rawVal)) {
+            if (rawVal.length >= l5SegProgress.length) {
+                candidateProgress = rawVal;
+            }
+        } else {
+            const remainder = l5SegAnswer.substring(l5SegProgress.length);
+
+            if (remainder.startsWith(rawVal)) {
+                candidateProgress = l5SegProgress + rawVal;
+            } else {
+                const lastChar = rawVal.charAt(rawVal.length - 1);
+                const expectedChar = l5SegAnswer.charAt(l5SegProgress.length);
+
+                if (lastChar === expectedChar) {
+                    candidateProgress = l5SegProgress + lastChar;
+                }
+
+                if (rawVal && l5SegProgress.endsWith(rawVal)) {
+                    isDuplicateSubmit = true;
+                }
+            }
         }
 
-        function validateL5() {
-            if (currentLevel !== 5) return;
-            const gi = document.getElementById('ghost-input');
-            const rawVal = (gi.value.match(cjkRegex) || []).join("");
-            if (!rawVal) return;
+        if (candidateProgress !== null) {
+            if (
+                bestProgress === null ||
+                candidateProgress.length > bestProgress.length
+            ) {
+                bestProgress = candidateProgress;
+            }
+        }
+    });
 
-            let newProgress = null;
-            if (l5SegAnswer.startsWith(rawVal)) {
-                if (rawVal.length >= l5SegProgress.length) newProgress = rawVal;
-                else { gi.value = l5SegProgress; return; }
-            } else {
-                const remainder = l5SegAnswer.substring(l5SegProgress.length);
-                if (remainder.startsWith(rawVal)) newProgress = l5SegProgress + rawVal;
-                else if (rawVal.charAt(rawVal.length - 1) === l5SegAnswer.charAt(l5SegProgress.length)) newProgress = l5SegProgress + rawVal.charAt(rawVal.length - 1);
+    if (bestProgress !== null) {
+        if (bestProgress.length > l5SegProgress.length) {
+            if (l5SegStart === null) {
+                l5SegStart = Date.now();
             }
 
-            if (newProgress !== null) {
-                if (l5SegStart === null) l5SegStart = Date.now();   // 写对第一个字才开始计时（本次尝试）
-                l5SegProgress = newProgress;
-                gi.value = newProgress;
-                renderL5Seg(l5SegProgress.length);
-                if (l5SegProgress.length >= l5SegAnswer.length) {   // 本段完成
-                    gi.blur();
-                    const attemptSec = l5SegStart ? Math.round((Date.now() - l5SegStart) / 1000) : 0;
-                    // 哲学乙：保留本段最快用时（反复练只取最快那遍）
-                    if (l5BestTimes[l5SegIndex] === null || attemptSec < l5BestTimes[l5SegIndex]) l5BestTimes[l5SegIndex] = attemptSec;
-                    showSegSummary(5, l5SegIndex, l5BestTimes[l5SegIndex]);
-                }
-            } else {
-                // 判错 / iOS 临时字：静默撤回，干净心流
-                l5TotalErrors++;
+            l5SegProgress = bestProgress;
+            renderL5Seg(l5SegProgress.length);
+        }
+
+        setTimeout(() => {
+            if (currentLevel === 5) {
                 gi.value = l5SegProgress;
             }
+        }, 0);
+
+        if (l5SegProgress.length >= l5SegAnswer.length) {
+            gi.blur();
+
+            const attemptSec = l5SegStart
+                ? Math.round((Date.now() - l5SegStart) / 1000)
+                : 0;
+
+            if (
+                l5BestTimes[l5SegIndex] === null ||
+                attemptSec < l5BestTimes[l5SegIndex]
+            ) {
+                l5BestTimes[l5SegIndex] = attemptSec;
+            }
+
+            showSegSummary(5, l5SegIndex, l5BestTimes[l5SegIndex]);
         }
 
+        return;
+    }
+
+    if (isDuplicateSubmit) {
+        setTimeout(() => {
+            if (currentLevel === 5) {
+                gi.value = l5SegProgress;
+            }
+        }, 0);
+        return;
+    }
+
+    if (countError) {
+        l5TotalErrors++;
+    }
+
+    setTimeout(() => {
+        if (currentLevel === 5) {
+            gi.value = l5SegProgress;
+        }
+    }, 0);
+}  
         // 提示：只显示当前该填的一个字（保住记忆点）
         function showL5Hint() {
             if (currentLevel !== 5) return;

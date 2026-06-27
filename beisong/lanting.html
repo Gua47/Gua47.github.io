@@ -103,7 +103,19 @@
         .secondary-btn { width: 100%; max-width: 560px; padding: 12px 0; background: #fff; color: #666; border: 1px solid var(--border-color); border-radius: 25px; font-size: 1rem; cursor: pointer; margin-top: 10px; display: none; }
 
         /* 第五关幽灵输入框 */
-        #ghost-input { position: fixed; top: -1000px; left: -1000px; opacity: 0; pointer-events: none; }
+        #ghost-input {
+    position: fixed;
+    left: 50%;
+    bottom: 8px;
+    width: 1px;
+    height: 1px;
+    opacity: 0.01;
+    border: none;
+    background: transparent;
+    color: transparent;
+    caret-color: transparent;
+    z-index: -1;
+}
         #l5-tip-toast { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 100; white-space: nowrap; pointer-events: none; }
 
         /* 成功提示页面（带情绪缓冲） */
@@ -615,80 +627,157 @@
             });
         }
 
-        function initL5Logic() {
-            const ghostInput = document.getElementById('ghost-input');
-            buildL5Answer();
-            l5Progress = "";
-            renderL5(0);
+    function initL5Logic() {
+    const ghostInput = document.getElementById('ghost-input');
+    buildL5Answer();
+    l5Progress = "";
+    l5Composing = false;
+    ghostInput.value = "";
+    renderL5(0);
 
-            document.getElementById('game-area').onclick = () => {
-                if (currentLevel === 5) ghostInput.focus();
-            };
-            setTimeout(() => ghostInput.focus(), 200);
+    document.getElementById('game-area').onclick = () => {
+        if (currentLevel === 5) ghostInput.focus();
+    };
 
-            // 属性赋值而非 addEventListener，避免反复进入第5关时监听器叠加
-            ghostInput.oncompositionstart = () => { l5Composing = true; };
-            ghostInput.oncompositionend = () => {
-                l5Composing = false;
-                validateL5();          // 上屏确认完成，统一从输入框真实值判定
-            };
-            ghostInput.oninput = (e) => {
-                if (l5Composing || e.isComposing) return;  // 合成中(手写未确认/拼音拼写中)不处理
-                validateL5();
-            };
-        }
+    setTimeout(() => ghostInput.focus(), 200);
 
+    ghostInput.oncompositionstart = () => {
+        l5Composing = true;
+    };
+
+    // 安卓手写关键修复：
+    // 有些安卓输入法写对字后，字还停留在“合成中”，不会立刻触发 input。
+    // 所以这里直接读取 e.data，让写对的字提前落格。
+    ghostInput.oncompositionupdate = (e) => {
+        validateL5(e.data || "", { countError: false });
+    };
+
+    ghostInput.oncompositionend = (e) => {
+        l5Composing = false;
+        validateL5(e.data || "");
+    };
+
+    ghostInput.oninput = (e) => {
+        validateL5(e.data || "");
+    };
+}
         // 静默前缀判定：对了落字前进，错了/临时字静默撤回（核心）
-        function validateL5() {
-            if (currentLevel !== 5) return;
-            const ghostInput = document.getElementById('ghost-input');
-            const rawVal = (ghostInput.value.match(cjkRegex) || []).join("");  // 只取汉字
-            if (!rawVal) return;
+        function validateL5(extraText = "", options = {}) {
+    if (currentLevel !== 5) return;
 
-            let newProgress = null;
+    const ghostInput = document.getElementById('ghost-input');
+    const countError = options.countError !== false;
 
-            // 情况1：拼音键盘——输入框带着前文整串（如 "永和"），是答案的前缀
-            if (l5FullAnswer.startsWith(rawVal)) {
-                if (rawVal.length >= l5Progress.length) {
-                    newProgress = rawVal;
-                } else {
-                    ghostInput.value = l5Progress;   // 删除操作，忽略
-                    return;
-                }
+    const fromInput = (ghostInput.value.match(cjkRegex) || []).join("");
+    const fromEvent = (String(extraText).match(cjkRegex) || []).join("");
+
+    const candidates = [];
+    if (fromInput) candidates.push(fromInput);
+    if (fromEvent) candidates.push(fromEvent);
+
+    if (fromInput && fromEvent && fromInput !== fromEvent) {
+        candidates.push(fromInput + fromEvent);
+    }
+
+    if (candidates.length === 0) {
+        ghostInput.value = l5Progress;
+        return;
+    }
+
+    let bestProgress = null;
+    let isDuplicateSubmit = false;
+
+    candidates.forEach(rawVal => {
+        let candidateProgress = null;
+
+        // 情况1：输入框带完整前缀，如“永和”
+        if (l5FullAnswer.startsWith(rawVal)) {
+            if (rawVal.length >= l5Progress.length) {
+                candidateProgress = rawVal;
+            }
+        } else {
+            const remainder = l5FullAnswer.substring(l5Progress.length);
+
+            // 情况2：安卓/手写只提交新字，如“和”
+            if (remainder.startsWith(rawVal)) {
+                candidateProgress = l5Progress + rawVal;
             } else {
-                // 情况2：手写键盘——输入框只带新写的字（丢了前文），接着进度往下拼
-                const remainder = l5FullAnswer.substring(l5Progress.length);
-                if (remainder.startsWith(rawVal)) {
-                    newProgress = l5Progress + rawVal;
+                const lastChar = rawVal.charAt(rawVal.length - 1);
+                const expectedChar = l5FullAnswer.charAt(l5Progress.length);
+
+                // 情况3：兜底，只看最后一个汉字
+                if (lastChar === expectedChar) {
+                    candidateProgress = l5Progress + lastChar;
                 }
-                // 情况3：兜底——传进来的最后一个字，恰是当前该填的字
-                else if (rawVal.charAt(rawVal.length - 1) === l5FullAnswer.charAt(l5Progress.length)) {
-                    newProgress = l5Progress + rawVal.charAt(rawVal.length - 1);
+
+                // 情况4：防止安卓把刚刚写对的字重复提交到下一格
+                if (
+                    rawVal &&
+                    l5Progress.endsWith(rawVal)
+                ) {
+                    isDuplicateSubmit = true;
                 }
             }
+        }
 
-            if (newProgress !== null) {
-                // 计时起点：写对第一个字才开始计（起算点 B，纯书写时长）
-                if (l5StartTime === null) l5StartTime = Date.now();
+        if (candidateProgress !== null) {
+            if (
+                bestProgress === null ||
+                candidateProgress.length > bestProgress.length
+            ) {
+                bestProgress = candidateProgress;
+            }
+        }
+    });
 
-                // 联想作弊检测：一次确认落入 ≥3 字，计一次自动输入
-                if (newProgress.length - l5Progress.length >= 3) l5AutoInputCount++;
+    if (bestProgress !== null) {
+        if (bestProgress.length > l5Progress.length) {
+            if (l5StartTime === null) l5StartTime = Date.now();
 
-                l5Progress = newProgress;
-                ghostInput.value = newProgress;        // 强制同步，防手写键盘错乱
-                renderL5(l5Progress.length);
+            if (bestProgress.length - l5Progress.length >= 3) {
+                l5AutoInputCount++;
+            }
 
-                if (l5Progress.length >= l5FullAnswer.length) {   // 全篇写完
-                    ghostInput.blur();
-                    triggerSuccess();
-                }
-            } else {
-                // 判错 / iOS 临时字：静默撤回，画面不变、不标红、不上屏（干净心流）
-                l5TotalErrors++;                       // 仅计数用于报告，不显示
+            l5Progress = bestProgress;
+            renderL5(l5Progress.length);
+        }
+
+        // 延迟同步，避免在安卓 compositionupdate 中立刻改 value，打断输入法
+        setTimeout(() => {
+            if (currentLevel === 5) {
                 ghostInput.value = l5Progress;
             }
+        }, 0);
+
+        if (l5Progress.length >= l5FullAnswer.length) {
+            ghostInput.blur();
+            triggerSuccess();
         }
 
+        return;
+    }
+
+    // 如果只是安卓重复提交刚才那个字，不算错，也不报警
+    if (isDuplicateSubmit) {
+        setTimeout(() => {
+            if (currentLevel === 5) {
+                ghostInput.value = l5Progress;
+            }
+        }, 0);
+        return;
+    }
+
+    // 真正写错：静默撤回
+    if (countError) {
+        l5TotalErrors++;
+    }
+
+    setTimeout(() => {
+        if (currentLevel === 5) {
+            ghostInput.value = l5Progress;
+        }
+    }, 0);
+}
         // —— 数据出口（MVP 阶段只在内存整理，不接任何存储）——
         // 将来接 localStorage / 云端时，只需在收尾处把本对象存走，引擎无需改动。
         function buildL5Result() {

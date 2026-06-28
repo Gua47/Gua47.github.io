@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>背诵闯关：石钟山记</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+    // 兜底：CDN 未加载 confetti 时，用内嵌轻量礼花，保证礼花一定能动且不中断后续逻辑
+    if (typeof window.confetti === 'undefined') {
+        window.confetti = function (opts) {
+            opts = opts || {};
+            const count = opts.particleCount || 30;
+            const spread = opts.spread || 60;
+            const angle = (opts.angle != null ? opts.angle : 90) * Math.PI / 180;
+            const origin = opts.origin || { x: 0.5, y: 0.5 };
+            const colors = opts.colors || ['#6a8b47', '#f4a460', '#4682b4', '#d9534f', '#9b59b6'];
+            const cv = document.createElement('canvas');
+            cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+            cv.width = window.innerWidth; cv.height = window.innerHeight;
+            document.body.appendChild(cv);
+            const ctx = cv.getContext('2d');
+            const ps = [];
+            for (let i = 0; i < count; i++) {
+                const a = angle + (Math.random() - 0.5) * (spread * Math.PI / 180);
+                const v = 6 + Math.random() * 8;
+                ps.push({ x: origin.x * cv.width, y: origin.y * cv.height, vx: Math.cos(a) * v, vy: -Math.sin(a) * v, g: 0.04 + Math.random() * 0.04, s: 5 + Math.random() * 5, life: 200 + Math.random() * 80, c: colors[Math.floor(Math.random() * colors.length)], rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4 });
+            }
+            let frame = 0;
+            (function loop() {
+                ctx.clearRect(0, 0, cv.width, cv.height);
+                let alive = false;
+                ps.forEach(p => {
+                    if (p.life <= 0) return;
+                    alive = true;
+                    p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life--;
+                    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+                    ctx.globalAlpha = Math.max(0, p.life / 80);
+                    ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+                    ctx.restore();
+                });
+                frame++;
+                if (alive && frame < 600) requestAnimationFrame(loop);
+                else cv.remove();
+            })();
+        };
+    }
+    </script>
+    <style>
+        :root { --bg-color: #f4f1e6; --text-color: #333; --primary-color: #6a8b47; --border-color: #c9c4b4; --error-color: #d9534f; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: "PingFang SC", "STSong", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; box-sizing: border-box; }
+
+        .nav-header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .back-link { text-decoration: none; color: #666; font-size: 14px; cursor: pointer; }
+        .progress-container { width: 100%; max-width: 600px; margin-bottom: 30px; position: relative; }
+        .progress-line { height: 2px; background: var(--border-color); position: absolute; top: 15px; width: 100%; z-index: 1; }
+        .progress-active { height: 2px; background: var(--primary-color); position: absolute; top: 15px; z-index: 2; transition: width 0.3s; }
+        .nodes { display: flex; justify-content: space-between; position: relative; z-index: 3; }
+        .node { width: 30px; height: 30px; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999; cursor: pointer; transition: all 0.2s; }
+        .node.active { border-color: var(--primary-color); color: var(--primary-color); font-weight: bold; background: #fff; }
+
+        #game-area { width: 100%; max-width: 600px; padding-bottom: 250px; position: relative; }
+        .content-para { line-height: 2.5; font-size: 1.2rem; text-align: justify; text-indent: 2em; margin: 20px 0; }
+        h2 { text-align: center; margin-bottom: 5px; letter-spacing: 4px; }
+        .author { text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 25px; }
+        #seg-hint { text-align: center; color: var(--primary-color); font-size: 1.05rem; margin-bottom: 18px; font-weight: bold; letter-spacing: 1px; }
+        .l5-subtip { font-size: 0.9rem; color: #999; font-weight: normal; letter-spacing: 0; margin-top: 8px; line-height: 1.6; }
+        .l5-subtip-weak { font-size: 0.82rem; color: #b5b5ab; }
+
+        .blank { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-bottom: 2px solid #999; margin: 0 2px; vertical-align: middle; cursor: pointer; text-indent: 0; color: transparent; transition: all 0.2s; }
+        .blank.active { border-bottom-color: var(--primary-color); background-color: rgba(106, 139, 71, 0.1); animation: breathe 1.2s infinite; }
+        @keyframes breathe { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        .blank.filled { display: inline; border-bottom: none; color: var(--primary-color); font-weight: bold; width: auto; min-width: 1.2rem; height: auto; vertical-align: baseline; }
+        .blank.wrong { color: var(--error-color) !important; font-weight: bold; border-bottom-color: var(--error-color); animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+        #options-container { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; padding: 20px 0 80px; border-top: 1px solid var(--border-color); justify-content: center; gap: 15px; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+        .option-btn { width: 55px; height: 55px; border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: #fff; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .option-btn:active { background: #f0f0f0; border-color: #999; }
+
+        /* 第4关分段录入 */
+        #l4-container { display: none; width: 100%; flex-direction: column; align-items: center; }
+        #l4-seg-hint { text-align: center; color: var(--primary-color); font-size: 1rem; margin-bottom: 12px; font-weight: bold; }
+        #l4-trans { font-size: 0.95rem; color: #777; line-height: 1.7; margin-bottom: 14px; text-align: justify; }
+        #l4-textarea { width: 100%; height: 160px; padding: 15px; font-size: 1.1rem; border: 2px solid var(--border-color); border-radius: 8px; resize: none; margin-bottom: 10px; box-sizing: border-box; line-height: 1.8; font-family: inherit; }
+        #l4-result-area { width: 100%; font-size: 1.2rem; line-height: 2.5; text-indent: 2em; text-align: justify; margin-bottom: 20px; display: none; }
+        .l4-char-green { color: var(--primary-color); font-weight: bold; margin: 0 2px; }
+        .l4-char-red { color: var(--error-color); font-weight: bold; margin: 0 2px; cursor: pointer; border-bottom: 2px dashed var(--error-color); padding-bottom: 2px; }
+        .l4-char-miss { color: #aaa; margin: 0 2px; cursor: pointer; border-bottom: 2px dashed #aaa; padding-bottom: 2px; }
+        .l4-inline-input { width: 2rem; height: 2rem; font-size: 1.1rem; text-align: center; border: 2px solid var(--error-color); color: var(--error-color); font-weight: bold; border-radius: 4px; outline: none; margin: 0 2px; vertical-align: middle; background: #fff; }
+
+        .action-btn { width: 100%; max-width: 560px; padding: 12px 0; background: var(--primary-color); color: #fff; border: none; border-radius: 25px; font-size: 1.1rem; cursor: pointer; margin-top: 10px; transition: opacity 0.3s; }
+        .secondary-btn { width: 100%; max-width: 560px; padding: 12px 0; background: #fff; color: #666; border: 1px solid var(--border-color); border-radius: 25px; font-size: 1rem; cursor: pointer; margin-top: 10px; display: none; }
+
+        #ghost-input {
+    position: fixed;
+    left: 50%;
+    bottom: 8px;
+    width: 1px;
+    height: 1px;
+    opacity: 0.01;
+    border: none;
+    background: transparent;
+    color: transparent;
+    caret-color: transparent;
+    z-index: -1;
+}
+        body.l5-ios-input #ghost-input {
+            left: 8px;
+            bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            width: 44px;
+            height: 44px;
+            opacity: 0.02;
+            z-index: 95;
+            font-size: 16px;
+            line-height: 44px;
+            padding: 0;
+            outline: none;
+            pointer-events: none;
+            -webkit-user-select: text;
+            user-select: text;
+            transform: translateZ(0);
+        }
+        #l5-tip-toast { display: none; position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(70,130,180,0.92); color: #fff; padding: 12px 22px; border-radius: 22px; font-size: 1.25rem; z-index: 100; white-space: nowrap; pointer-events: none; text-align: center; font-weight: bold; }
+        #l5-hint-btn { display: none; position: fixed; bottom: 28px; right: 16px; z-index: 110; background: #4682b4; color: #fff; border: none; border-radius: 22px; padding: 10px 18px; font-size: 0.95rem; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.15); }
+
+        /* 段末小结页 */
+        #seg-summary { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 241, 230, 0.98); z-index: 220; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; }
+        #seg-summary h1 { font-size: 1.8rem; color: var(--primary-color); margin-bottom: 12px; letter-spacing: 2px; }
+        #seg-summary .seg-time { font-size: 1.05rem; color: #666; margin-bottom: 30px; }
+        #seg-summary .seg-time strong { color: var(--text-color); font-size: 1.2rem; }
+        .seg-btn { padding: 14px 36px; border-radius: 28px; font-size: 1.05rem; cursor: pointer; margin: 8px 0; border: none; width: 80%; max-width: 320px; font-family: inherit; }
+        .seg-btn-primary { background: var(--primary-color); color: #fff; }
+        .seg-btn-ghost { background: #fff; color: var(--primary-color); border: 1px solid var(--primary-color); }
+
+        /* 成功页（第1-4关用） */
+        #success-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 241, 230, 0.98); z-index: 200; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #success-page h1 { font-size: 2.2rem; color: var(--primary-color); margin-bottom: 20px; letter-spacing: 2px; }
+        .next-btn { padding: 15px 40px; background: var(--primary-color); color: #fff; border: none; border-radius: 30px; font-size: 1.1rem; cursor: pointer; margin-top: 20px; }
+
+        /* 成就卡 */
+        #achievement-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 241, 230, 0.98); z-index: 250; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        #achievement-card { width: 100%; max-width: 360px; background: linear-gradient(160deg, #ffffff 0%, #f7f5ec 100%); border: 1px solid var(--border-color); border-radius: 20px; padding: 34px 26px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
+        #ac-seal { font-size: 0.8rem; letter-spacing: 3px; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 20px; display: inline-block; padding: 3px 14px; margin-bottom: 20px; }
+        #ac-piece { font-size: 1.7rem; letter-spacing: 3px; color: var(--text-color); margin: 0 0 6px 0; font-weight: bold; }
+        #ac-author { font-size: 0.85rem; color: #999; margin-bottom: 22px; }
+        #ac-achieve { font-size: 1.1rem; color: var(--primary-color); font-weight: bold; margin-bottom: 16px; letter-spacing: 1px; }
+        #ac-time { font-size: 0.95rem; color: #666; margin-bottom: 22px; }
+        #ac-time strong { color: var(--text-color); font-size: 1.1rem; }
+        #ac-quote { font-size: 1rem; color: #555; line-height: 1.7; padding: 14px 8px; border-top: 1px dashed var(--border-color); border-bottom: 1px dashed var(--border-color); margin-bottom: 16px; }
+        #ac-date { font-size: 0.8rem; color: #aaa; letter-spacing: 1px; }
+        .ac-btn-group { display: flex; flex-direction: column; gap: 12px; align-items: center; width: 100%; max-width: 360px; margin-top: 20px; }
+        .ac-btn { width: 100%; padding: 13px 0; border-radius: 25px; font-size: 1rem; cursor: pointer; font-family: inherit; border: none; }
+        .ac-btn-primary { background: #4682b4; color: #fff; }
+        .ac-btn-ghost { background: #fff; color: var(--primary-color); border: 1px solid var(--primary-color); }
+
+        /* 报告页 */
+        #summary-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 999; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        #report-capture-area { background: #fff; padding: 25px 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        #summary-title { font-size: 1.8rem; color: var(--primary-color); text-align: center; margin-top: 0; letter-spacing: 2px; }
+        #summary-eval { text-align: center; color: #666; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.6; }
+        .report-para { line-height: 2.2; font-size: 1.05rem; text-align: justify; text-indent: 2em; margin: 15px 0; color: #444; }
+        .btn-group { display: flex; flex-direction: column; gap: 12px; align-items: center; padding-bottom: 40px; }
+    </style>
+</head>
+<body>
+    <!-- 成功页（第1-4关） -->
+    <div id="success-page">
+        <h1 id="success-title">挑战成功🎉</h1>
+        <p id="success-desc" style="margin-bottom: 30px; color: #666;">百尺竿头，更进一步</p>
+        <button class="next-btn" onclick="closeSuccessPage()" id="success-next-btn">进入下一关</button>
+    </div>
+
+    <!-- 段末小结页（第4、5关分段用） -->
+    <div id="seg-summary">
+        <h1 id="seg-summary-title">本段完成 🎉</h1>
+        <div class="seg-time" id="seg-summary-time"></div>
+        <button class="seg-btn seg-btn-primary" id="seg-next-btn" onclick="segGoNext()">进入下一段</button>
+        <button class="seg-btn seg-btn-ghost" id="seg-redo-btn" onclick="segRedo()">本段再练一遍</button>
+    </div>
+
+    <!-- 成就卡 -->
+    <div id="achievement-page">
+        <div id="achievement-card">
+            <span id="ac-seal">默写达成</span>
+            <h1 id="ac-piece">石钟山记</h1>
+            <div id="ac-author">苏轼 〔宋代〕</div>
+            <div id="ac-achieve">✦ 全篇默写达成 ✦</div>
+            <div id="ac-time">用时 <strong id="ac-time-val">--</strong></div>
+            <div id="ac-quote">突破自己的记录，就是成功者。</div>
+            <div id="ac-date">2026.01.01</div>
+        </div>
+        <div class="ac-btn-group">
+            <button class="ac-btn ac-btn-primary" onclick="saveAchievementCard()" id="ac-save-btn">💾 保存成就卡长图</button>
+            <button class="ac-btn ac-btn-ghost" onclick="openReportFromCard()">查看完整报告</button>
+        </div>
+    </div>
+
+    <div class="nav-header">
+        <a href="./index.html" class="back-link">← 返回首页</a>
+        <span id="level-title" style="font-size: 14px; color: #888;">正在练习：第一关</span>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-line"></div>
+        <div id="progress-active" class="progress-active"></div>
+        <div class="nodes">
+            <div class="node" onclick="goToLevel(1)">1</div>
+            <div class="node" onclick="goToLevel(2)">2</div>
+            <div class="node" onclick="goToLevel(3)">3</div>
+            <div class="node" onclick="goToLevel(4)">4</div>
+            <div class="node" onclick="goToLevel(5)">测</div>
+        </div>
+    </div>
+
+    <div id="game-area">
+        <h2>石钟山记</h2>
+        <div class="author">苏轼 〔宋代〕</div>
+        <div id="seg-hint"></div>
+        <div id="content-body"></div>
+
+        <div id="l4-container">
+            <select id="l4-seg-select" style="width:100%; padding:12px; font-size:1.05rem; margin-bottom:14px; border:2px solid var(--border-color); border-radius:8px; outline:none; background:#fff; color:var(--text-color); cursor:pointer; font-family:inherit;"></select>
+            <div id="l4-seg-hint"></div>
+            <div id="l4-trans"></div>
+            <textarea id="l4-textarea" placeholder="🎤 建议唤起语音输入本段内容..."></textarea>
+            <div id="l4-result-area"></div>
+            <button id="l4-check-btn" class="action-btn" onclick="checkL4Seg()">核查本段</button>
+            <button id="l4-reedit-btn" class="secondary-btn" onclick="reeditL4Seg()">🔄 错位严重？重新编辑本段</button>
+        </div>
+    </div>
+
+    <div id="options-container"></div>
+
+    <input type="text" id="ghost-input" autocomplete="off" autocorrect="off" spellcheck="false" />
+    <div id="l5-tip-toast"></div>
+    <button id="l5-hint-btn" onclick="showL5Hint()">💡 提示</button>
+
+    <!-- 报告页 -->
+    <div id="summary-overlay">
+        <div id="report-capture-area">
+            <h1 id="summary-title">石钟山记·默写报告</h1>
+            <div id="summary-eval"></div>
+            <div id="report-text-container"></div>
+        </div>
+        <div class="btn-group">
+            <button class="secondary-btn" style="display:block; border-color: #4682b4; color: #4682b4; margin-top:0;" onclick="backToAchievement()">🏅 返回成就卡（可截图）</button>
+            <button id="download-btn" class="action-btn" onclick="downloadReport()" style="background: #4682b4; margin-top:0;">💾 保存报告为长图</button>
+            <button class="secondary-btn" style="display:block; border-color: var(--primary-color); color: var(--primary-color); margin-top:0;" onclick="goToLevel(5)">🔄 再测一次</button>
+            <button class="secondary-btn" style="display:block; margin-top:0;" onclick="location.href='./index.html'">🏠 返回首页</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== 数据 =====
+        // 第1-3关：整篇连续挖空，用 5 个自然段呈现
+        const rawParas = [
+            "《水经》云：“彭蠡之口有石钟山焉。”郦元以为下临深潭，微风鼓浪，水石相搏，声如洪钟。是说也，人常疑之。今以钟磬置水中，虽大风浪不能鸣也，而况石乎！至唐李渤始访其遗踪，得双石于潭上，扣而聆之，南声函胡，北音清越，桴止响腾，余韵徐歇。自以为得之矣。然是说也，余尤疑之。石之铿然有声者，所在皆是也，而此独以钟名，何哉？",
+            "元丰七年六月丁丑，余自齐安舟行适临汝，而长子迈将赴饶之德兴尉，送之至湖口，因得观所谓石钟者。寺僧使小童持斧，于乱石间择其一二扣之，硿硿焉。余固笑而不信也。至暮夜月明，独与迈乘小舟，至绝壁下。大石侧立千尺，如猛兽奇鬼，森然欲搏人；而山上栖鹘，闻人声亦惊起，磔磔云霄间；又有若老人咳且笑于山谷中者，或曰此鹳鹤也。余方心动欲还，而大声发于水上，噌吰如钟鼓不绝。舟人大恐。徐而察之，则山下皆石穴罅，不知其浅深，微波入焉，涵澹澎湃而为此也。舟回至两山间，将入港口，有大石当中流，可坐百人，空中而多窍，与风水相吞吐，有窾坎镗鞳之声，与向之噌吰者相应，如乐作焉。因笑谓迈曰：“汝识之乎？噌吰者，周景王之无射也；窾坎镗鞳者，魏庄子之歌钟也。古之人不余欺也！”",
+            "事不目见耳闻，而臆断其有无，可乎？郦元之所见闻，殆与余同，而言之不详；士大夫终不肯以小舟夜泊绝壁之下，故莫能知；而渔工水师虽知而不能言。此世所以不传也。而陋者乃以斧斤考击而求之，自以为得其实。余是以记之，盖叹郦元之简，而笑李渤之陋也。"
+        ];
+
+        // 第4、5关：分段训练
+        const segments = [
+            { text: "《水经》云：“彭蠡之口有石钟山焉。”郦元以为下临深潭，微风鼓浪，水石相搏，声如洪钟。是说也，人常疑之。今以钟磬置水中，虽大风浪不能鸣也，而况石乎！至唐李渤始访其遗踪，得双石于潭上，扣而聆之，南声函胡，北音清越，桴止响腾，余韵徐歇。自以为得之矣。然是说也，余尤疑之。石之铿然有声者，所在皆是也，而此独以钟名，何哉？",
+              trans: "《水经》中说：“鄱阳湖的湖口有一座石钟山。”郦道元认为山脚下临近深潭，微风掀起波浪，水浪与山石相互撞击，发出大钟轰鸣一般的声响。人们常常怀疑这种说法。如今把钟磬放进水里，即便狂风巨浪也不能使它发出响声，更何况是石头呢！到了唐代，李渤前去探寻旧址，在水潭边找到两块山石，敲击着仔细聆听。南边石头的声音浑厚模糊，北边石头的声音清脆悠扬，鼓槌停下之后，余音还久久回荡。他自认为找到了石钟山命名的缘由。可我更加怀疑：敲击后能发出声响的石头到处都有，唯独这座山用“钟”来命名，这是什么缘故呢？" },
+            { text: "元丰七年六月丁丑，余自齐安舟行适临汝，而长子迈将赴饶之德兴尉，送之至湖口，因得观所谓石钟者。寺僧使小童持斧，于乱石间择其一二扣之，硿硿焉。余固笑而不信也。至暮夜月明，独与迈乘小舟，至绝壁下。大石侧立千尺，如猛兽奇鬼，森然欲搏人；而山上栖鹘，闻人声亦惊起，磔磔云霄间；又有若老人咳且笑于山谷中者，或曰此鹳鹤也。",
+              trans: "元丰七年六月丁丑日，我从齐安乘船前往临汝，长子苏迈将要赴任饶州德兴县县尉。我送他到湖口，才得以亲眼看一看这座石钟山。庙里的僧人让小童拿着斧头，在乱石里挑一两块敲打，发出硿硿的声响，我本来就觉得可笑，并不信服。等到夜深月明，我和苏迈独自坐着小船来到悬崖之下。巨大的山石斜立千尺，如同猛兽恶鬼，阴森森地想要扑向人。山上栖息的老鹰听见人声猛然惊飞，在高空发出凄厉的啼叫；山谷里又传来像老人边咳嗽边发笑的声音，有人说那是鹳鹤。" },
+            { text: "余方心动欲还，而大声发于水上，噌吰如钟鼓不绝。舟人大恐。徐而察之，则山下皆石穴罅，不知其浅深，微波入焉，涵澹澎湃而为此也。舟回至两山间，将入港口，有大石当中流，可坐百人，空中而多窍，与风水相吞吐，有窾坎镗鞳之声，与向之噌吰者相应，如乐作焉。因笑谓迈曰：“汝识之乎？噌吰者，周景王之无射也；窾坎镗鞳者，魏庄子之歌钟也。古之人不余欺也！”",
+              trans: "我正心惊想要返航，水面突然传来巨响，钟声鼓声连绵不断。船夫十分惊恐。我慢慢观察，原来山脚下遍布石洞与缝隙，深浅难测，细小的水波涌入洞中，激荡澎湃，才形成这样的轰鸣。小船行到两山之间，快要驶入港湾，一块巨石横在水流中央，上面能坐下百人。石头中间是空的，布满孔洞，风浪在里面进出激荡，发出镗镗坎坎的钟鼓之声，和刚才的轰鸣相互应和，就像一场乐曲演奏。我笑着对苏迈说：“你明白吗？那浑厚轰鸣，如同周景王的无射大钟；铿锵回响，好比魏庄子的编钟。古人果然没有欺骗我！”" },
+            { text: "事不目见耳闻，而臆断其有无，可乎？郦元之所见闻，殆与余同，而言之不详；士大夫终不肯以小舟夜泊绝壁之下，故莫能知；而渔工水师虽知而不能言。此世所以不传也。而陋者乃以斧斤考击而求之，自以为得其实。余是以记之，盖叹郦元之简，而笑李渤之陋也。",
+              trans: "事情没有亲眼看见、亲耳听见，就凭主观猜测断定真伪，这样可行吗？郦道元看到听到的情形，大概和我差不多，只是记述得太过简略。士大夫始终不肯乘着小船在深夜停靠在悬崖之下，所以无法得知真相；而渔夫船工虽然知晓内情，却无法写成文字流传。这就是世上没能留下真相的原因。浅薄之人竟用斧头敲打山石来探求缘由，还自以为找到了实情。我写下这篇文章，既是惋惜郦道元记述过于简略，也是讥笑李渤见识浅陋。" }
+        ];
+
+        const fullTextStr = rawParas.join("");
+        // 标点过滤表：已新增单引号 ‘ ’（多层引号嵌套）
+        const puncRegex = /[，。；？、〔〕“”‘’\s！!：:《》〈〉（）()]/;
+        const charPool = [...new Set(fullTextStr.replace(new RegExp(puncRegex, 'g'), "").split(''))];
+        const l5IsIOS = /iP(ad|hone|od)/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const l5IsAndroid = /Android/i.test(navigator.userAgent);
+
+        // 第1-3关易错字混淆表（本篇专属；精准干扰优先，不足随机补足）
+        const confusionMap = {
+            "蠡": ["梨"],
+            "磬": ["罄"],
+            "桴": ["浮"],
+            "磔": ["桀"],
+            "鹘": ["骨"],
+            "罅": ["隙"],
+            "窾": ["款"],
+            "镗": ["堂"]
+        };
+
+        let currentLevel = 1;
+        let allBlanks = [];
+        let activeIndex = 0;
+        let globalErrorCount = 0;
+
+        function goToLevel(l) {
+            ['summary-overlay','success-page','achievement-page','seg-summary'].forEach(id => document.getElementById(id).style.display = 'none');
+            currentLevel = l;
+            initLevel(l);
+        }
+
+        function handleGlobalError() {
+            globalErrorCount++;
+            if (globalErrorCount >= 20 && currentLevel <= 3) {
+                setTimeout(() => {
+                    alert("哎呀，遇到瓶颈啦！本关已失误 15 次。“温故而知新”，先退回上一关稳扎稳打吧！");
+                    goToLevel(currentLevel > 1 ? currentLevel - 1 : 1);
+                }, 100);
+            }
+        }
+
+        function initLevel(level) {
+            globalErrorCount = 0;
+            const body = document.getElementById('content-body');
+            const l4Container = document.getElementById('l4-container');
+            const opts = document.getElementById('options-container');
+            const ghostInput = document.getElementById('ghost-input');
+
+            body.innerHTML = '';
+            body.style.display = 'block';
+            l4Container.style.display = 'none';
+            opts.style.display = 'none';
+            ghostInput.style.display = 'none';
+            ghostInput.value = '';
+            document.body.classList.toggle('l5-ios-input', level === 5 && l5IsIOS);
+            document.body.classList.toggle('l5-android-input', level === 5 && l5IsAndroid);
+            document.getElementById('l5-tip-toast').style.display = 'none';
+            document.getElementById('l5-hint-btn').style.display = 'none';
+            document.getElementById('seg-hint').innerText = '';
+            allBlanks = [];
+            activeIndex = 0;
+
+            document.getElementById('level-title').innerText = level === 5 ? "终极测评" : `正在练习：第${level}关`;
+            document.querySelectorAll('.node').forEach((n, i) => n.classList.toggle('active', i < level));
+            document.getElementById('progress-active').style.width = (level - 1) * 25 + '%';
+
+            if (level <= 3) {
+                opts.style.display = 'flex';
+                renderStandardBody(level);
+                refreshUI_L1to3();
+            } else if (level === 4) {
+                body.style.display = 'none';
+                l4Container.style.display = 'flex';
+                initL4();
+            } else if (level === 5) {
+                ghostInput.style.display = 'block';
+                document.getElementById('l5-hint-btn').style.display = 'block';
+                initL5();
+            }
+        }
+
+        // ===== 第1-3关：整篇连续挖空 + 易错字干扰 =====
+        function renderStandardBody(level) {
+            const body = document.getElementById('content-body');
+            const gapRate = [0.4, 0.6, 0.8][level - 1];
+            rawParas.forEach((para) => {
+                const p = document.createElement('p');
+                p.className = 'content-para';
+                para.split('').forEach(char => {
+                    if (puncRegex.test(char)) {
+                        p.appendChild(document.createTextNode(char));
+                    } else if (Math.random() < gapRate) {
+                        const span = document.createElement('span');
+                        span.className = 'blank';
+                        span.dataset.ans = char;
+                        span.innerText = char;
+                        p.appendChild(span);
+                        allBlanks.push(span);
+                    } else {
+                        p.appendChild(document.createTextNode(char));
+                    }
+                });
+                body.appendChild(p);
+            });
+        }
+
+        function refreshUI_L1to3() {
+            if (activeIndex >= allBlanks.length) { triggerSuccess(); return; }
+            allBlanks.forEach((b, i) => {
+                b.classList.remove('active');
+                if (i === activeIndex) { b.classList.add('active'); b.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            });
+            const correctChar = allBlanks[activeIndex].dataset.ans;
+            const preset = (confusionMap[correctChar] || []).filter(c => c !== correctChar);
+            const need = 3 - preset.length;
+            const used = new Set([correctChar, ...preset]);
+            const randomFill = charPool.filter(c => !used.has(c)).sort(() => Math.random() - 0.5).slice(0, Math.max(0, need));
+            const options = [correctChar, ...preset, ...randomFill].sort(() => Math.random() - 0.5);
+
+            const optsContainer = document.getElementById('options-container');
+            optsContainer.innerHTML = '';
+            options.forEach(char => {
+                const btn = document.createElement('div');
+                btn.className = 'option-btn';
+                btn.innerText = char;
+                btn.onclick = () => {
+                    if (char === correctChar) {
+                        allBlanks[activeIndex].innerText = char;
+                        allBlanks[activeIndex].className = 'blank filled';
+                        activeIndex++;
+                        refreshUI_L1to3();
+                    } else {
+                        allBlanks[activeIndex].classList.add('wrong');
+                        setTimeout(() => allBlanks[activeIndex].classList.remove('wrong'), 400);
+                        handleGlobalError();
+                    }
+                };
+                optsContainer.appendChild(btn);
+            });
+        }
+
+        // ===== 第4关：分段录入核对（七段，段末小结，可反复练，不计时）=====
+        let l4SegIndex = 0;
+        let l4ParaData = [];
+        let l4SavedText = [];
+        let l4Completed = [];
+
+        function initL4() {
+            l4SegIndex = 0;
+            l4SavedText = new Array(segments.length).fill("");
+            l4Completed = new Array(segments.length).fill(false);
+            buildL4Select();
+            renderL4Seg();
+        }
+
+        function buildL4Select() {
+            const sel = document.getElementById('l4-seg-select');
+            sel.innerHTML = '';
+            segments.forEach((_, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = (l4Completed[i] ? '✅ ' : '') + `第 ${i + 1} / ${segments.length} 段`;
+                sel.appendChild(opt);
+            });
+            sel.value = l4SegIndex;
+            sel.onchange = (e) => { l4SegIndex = parseInt(e.target.value); renderL4Seg(); };
+        }
+
+        function renderL4Seg() {
+            buildL4Select();
+            document.getElementById('l4-seg-hint').innerText = `第 ${l4SegIndex + 1} / ${segments.length} 段（可在上方下拉框自由选段反复练）`;
+            document.getElementById('l4-trans').innerText = "译文参考：" + segments[l4SegIndex].trans;
+            document.getElementById('l4-textarea').style.display = 'block';
+            document.getElementById('l4-textarea').value = l4SavedText[l4SegIndex];
+            document.getElementById('l4-result-area').style.display = 'none';
+            document.getElementById('l4-check-btn').style.display = 'block';
+            document.getElementById('l4-reedit-btn').style.display = 'none';
+        }
+
+        function reeditL4Seg() {
+            document.getElementById('l4-textarea').style.display = 'block';
+            document.getElementById('l4-check-btn').style.display = 'block';
+            document.getElementById('l4-result-area').style.display = 'none';
+            document.getElementById('l4-reedit-btn').style.display = 'none';
+            document.getElementById('l4-textarea').value = l4SavedText[l4SegIndex];
+            document.getElementById('l4-textarea').focus();
+        }
+
+        function checkL4Seg() {
+            const raw = segments[l4SegIndex].text;
+            const inputVal = document.getElementById('l4-textarea').value;
+            l4SavedText[l4SegIndex] = inputVal;
+            const inputChinese = inputVal.replace(new RegExp(puncRegex, 'g'), "").split('');
+            if (inputChinese.length === 0) { alert("输入为空，请先录入本段内容。"); return; }
+
+            l4ParaData = [];
+            let ptr = 0;
+            raw.split('').forEach(char => {
+                if (puncRegex.test(char)) {
+                    l4ParaData.push({ isPunct: true, char });
+                } else {
+                    const userChar = ptr < inputChinese.length ? inputChinese[ptr] : "";
+                    l4ParaData.push({ isPunct: false, targetChar: char, userChar, isCorrect: userChar === char });
+                    ptr++;
+                }
+            });
+            document.getElementById('l4-textarea').style.display = 'none';
+            document.getElementById('l4-check-btn').style.display = 'none';
+            document.getElementById('l4-reedit-btn').style.display = 'block';
+            renderL4Result();
+        }
+
+        function renderL4Result() {
+            const area = document.getElementById('l4-result-area');
+            area.style.display = 'block';
+            area.innerHTML = '';
+            let allCorrect = true;
+            l4ParaData.forEach((item, index) => {
+                if (item.isPunct) { area.appendChild(document.createTextNode(item.char)); return; }
+                const span = document.createElement('span');
+                span.dataset.index = index;
+                if (item.isCorrect) { span.className = 'l4-char-green'; span.innerText = item.targetChar; }
+                else {
+                    allCorrect = false;
+                    span.className = item.userChar ? 'l4-char-red' : 'l4-char-miss';
+                    span.innerText = item.userChar || "空";
+                    span.onclick = () => openL4Inline(index, span);
+                }
+                area.appendChild(span);
+            });
+            if (allCorrect) {
+                setTimeout(() => {
+                    document.getElementById('l4-reedit-btn').style.display = 'none';
+                    l4Completed[l4SegIndex] = true;
+                    showSegSummary(4, l4SegIndex, null);
+                }, 300);
+            }
+        }
+
+        function openL4Inline(index, spanNode) {
+            const input = document.createElement('input');
+            input.type = 'text'; input.className = 'l4-inline-input';
+            input.setAttribute('autocomplete','off'); input.setAttribute('autocorrect','off'); input.setAttribute('spellcheck','false');
+            spanNode.parentNode.replaceChild(input, spanNode);
+            input.focus();
+            input.oninput = () => {
+                const val = input.value.replace(new RegExp(puncRegex, 'g'), "");
+                if (val.length >= 1) checkL4Inline(index, val[val.length - 1], input);
+            };
+        }
+
+        function checkL4Inline(index, val, inputNode) {
+            if (val === l4ParaData[index].targetChar) {
+                l4ParaData[index].userChar = val;
+                l4ParaData[index].isCorrect = true;
+                renderL4Result();
+            } else {
+                inputNode.value = '';
+                inputNode.classList.add('wrong');
+                setTimeout(() => inputNode.classList.remove('wrong'), 400);
+            }
+        }
+
+        // ===== 第5关：手写静默 + 七段闯关 =====
+        const cjkRegex = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g;
+        let l5SegIndex = 0;
+        let l5SegAnswer = "";
+        let l5SegProgress = "";
+        let l5SegBlanks = [];
+        let l5SegStart = null;          // 本次尝试起点（写下第一个字才开始）
+        let l5BestTimes = [];           // 每段最快用时（秒）
+        let l5TotalErrors = 0;
+        let l5Composing = false;
+        let l5GhostBound = false;
+
+        function focusL5Ghost() {
+            if (currentLevel !== 5) return;
+            const segSummaryOpen = document.getElementById('seg-summary').style.display === 'flex';
+            const achievementOpen = document.getElementById('achievement-page').style.display === 'flex';
+            const reportOpen = document.getElementById('summary-overlay').style.display === 'block';
+            if (segSummaryOpen || achievementOpen || reportOpen) return;
+            const gi = document.getElementById('ghost-input');
+            if (!gi || gi.style.display === 'none') return;
+            try {
+                gi.focus({ preventScroll: true });
+            } catch (e) {
+                gi.focus();
+            }
+            if (document.activeElement === gi && typeof gi.setSelectionRange === 'function') {
+                const end = gi.value.length;
+                try { gi.setSelectionRange(end, end); } catch (e) {}
+            }
+        }
+
+        function syncL5GhostValue() {
+            const gi = document.getElementById('ghost-input');
+            gi.value = l5IsIOS ? '' : l5SegProgress;
+            if (typeof gi.setSelectionRange === 'function') {
+                const end = gi.value.length;
+                try { gi.setSelectionRange(end, end); } catch (e) {}
+            }
+        }
+
+        function scrollL5ActiveBlank(el) {
+            if (l5IsIOS) {
+                el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+                setTimeout(focusL5Ghost, 0);
+            } else {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function initL5() {
+            l5SegIndex = 0;
+            l5BestTimes = new Array(segments.length).fill(null);
+            l5TotalErrors = 0;
+            bindGhostInput();
+            loadL5Seg();
+        }
+
+        function loadL5Seg() {
+            const body = document.getElementById('content-body');
+            body.innerHTML = '';
+            l5SegBlanks = [];
+            l5SegProgress = "";
+            l5SegStart = null;
+            document.getElementById('seg-hint').innerHTML = `终极测评 · 第 ${l5SegIndex + 1} / ${segments.length} 段（手写输入）<div class="l5-subtip">✍️ 一鼓作气完成，中途离开则计时重置<br><span class="l5-subtip-weak">（可反复练习，只计最短用时）</span></div>`;
+
+            const segText = segments[l5SegIndex].text;
+            l5SegAnswer = segText.replace(new RegExp(puncRegex, 'g'), "");
+            const p = document.createElement('p');
+            p.className = 'content-para';
+            segText.split('').forEach(char => {
+                if (puncRegex.test(char)) { p.appendChild(document.createTextNode(char)); return; }
+                const span = document.createElement('span');
+                span.className = 'blank';
+                span.dataset.ans = char;
+                span.innerText = char;
+                p.appendChild(span);
+                l5SegBlanks.push(span);
+            });
+            body.appendChild(p);
+            renderL5Seg(0);
+            const gi = document.getElementById('ghost-input');
+            gi.value = '';
+            focusL5Ghost();
+            setTimeout(focusL5Ghost, 200);
+        }
+
+        function renderL5Seg(progressLen) {
+            l5SegBlanks.forEach((b, i) => {
+                b.classList.remove('active', 'wrong');
+                if (i < progressLen) {
+                    b.className = 'blank filled'; b.style.color = ''; b.innerText = b.dataset.ans;
+                } else {
+                    b.className = 'blank'; b.style.color = ''; b.innerText = b.dataset.ans;
+                    if (i === progressLen) { b.classList.add('active'); scrollL5ActiveBlank(b); }
+                }
+            });
+        }
+
+        function bindGhostInput() {
+    const gi = document.getElementById('ghost-input');
+    const gameArea = document.getElementById('game-area');
+
+    if (l5GhostBound) return;
+    l5GhostBound = true;
+
+    gameArea.onclick = () => {
+        focusL5Ghost();
+    };
+
+    gameArea.ontouchend = () => {
+        focusL5Ghost();
+    };
+
+    gi.oncompositionstart = () => {
+        l5Composing = true;
+    };
+
+    gi.oncompositionupdate = (e) => {
+        if (!l5IsIOS) {
+            validateL5(e.data || "", { countError: false });
+        }
+    };
+
+    gi.oncompositionend = (e) => {
+        l5Composing = false;
+        validateL5(e.data || "");
+    };
+
+    gi.oninput = (e) => {
+        if (l5IsIOS && l5Composing) return;
+        validateL5(e.data || "");
+    };
+
+    gi.onblur = () => {
+        if (!l5IsIOS || currentLevel !== 5) return;
+        const segSummaryOpen = document.getElementById('seg-summary').style.display === 'flex';
+        const achievementOpen = document.getElementById('achievement-page').style.display === 'flex';
+        const reportOpen = document.getElementById('summary-overlay').style.display === 'block';
+        if (!segSummaryOpen && !achievementOpen && !reportOpen) {
+            setTimeout(focusL5Ghost, 80);
+        }
+    };
+}
+      function validateL5(extraText = "", options = {}) {
+    if (currentLevel !== 5) return;
+
+    const gi = document.getElementById('ghost-input');
+    const countError = options.countError !== false;
+
+    const fromInput = (gi.value.match(cjkRegex) || []).join("");
+    const fromEvent = (String(extraText).match(cjkRegex) || []).join("");
+
+    const candidates = [];
+    if (fromInput) candidates.push(fromInput);
+    if (fromEvent) candidates.push(fromEvent);
+
+    if (fromInput && fromEvent && fromInput !== fromEvent) {
+        candidates.push(fromInput + fromEvent);
+    }
+
+    if (candidates.length === 0) {
+        syncL5GhostValue();
+        return;
+    }
+
+    let bestProgress = null;
+    let isDuplicateSubmit = false;
+
+    candidates.forEach(rawVal => {
+        let candidateProgress = null;
+
+        if (l5SegAnswer.startsWith(rawVal)) {
+            if (rawVal.length >= l5SegProgress.length) {
+                candidateProgress = rawVal;
+            }
+        } else {
+            const remainder = l5SegAnswer.substring(l5SegProgress.length);
+
+            if (remainder.startsWith(rawVal)) {
+                candidateProgress = l5SegProgress + rawVal;
+            } else {
+                const lastChar = rawVal.charAt(rawVal.length - 1);
+                const expectedChar = l5SegAnswer.charAt(l5SegProgress.length);
+
+                if (lastChar === expectedChar) {
+                    candidateProgress = l5SegProgress + lastChar;
+                }
+
+                if (rawVal && l5SegProgress.endsWith(rawVal)) {
+                    isDuplicateSubmit = true;
+                }
+            }
+        }
+
+        if (candidateProgress !== null) {
+            if (
+                bestProgress === null ||
+                candidateProgress.length > bestProgress.length
+            ) {
+                bestProgress = candidateProgress;
+            }
+        }
+    });
+
+    if (bestProgress !== null) {
+        if (bestProgress.length > l5SegProgress.length) {
+            if (l5SegStart === null) {
+                l5SegStart = Date.now();
+            }
+
+            l5SegProgress = bestProgress;
+            renderL5Seg(l5SegProgress.length);
+        }
+
+        setTimeout(() => {
+            if (currentLevel === 5) {
+                syncL5GhostValue();
+                focusL5Ghost();
+            }
+        }, 0);
+
+        if (l5SegProgress.length >= l5SegAnswer.length) {
+            gi.blur();
+
+            const attemptSec = l5SegStart
+                ? Math.round((Date.now() - l5SegStart) / 1000)
+                : 0;
+
+            if (
+                l5BestTimes[l5SegIndex] === null ||
+                attemptSec < l5BestTimes[l5SegIndex]
+            ) {
+                l5BestTimes[l5SegIndex] = attemptSec;
+            }
+
+            showSegSummary(5, l5SegIndex, l5BestTimes[l5SegIndex]);
+        }
+
+        return;
+    }
+
+    if (isDuplicateSubmit) {
+        setTimeout(() => {
+            if (currentLevel === 5) {
+                syncL5GhostValue();
+                focusL5Ghost();
+            }
+        }, 0);
+        return;
+    }
+
+    if (countError) {
+        l5TotalErrors++;
+    }
+
+    setTimeout(() => {
+        if (currentLevel === 5) {
+            syncL5GhostValue();
+            focusL5Ghost();
+        }
+    }, 0);
+}  
+        // 提示：只显示当前该填的一个字（保住记忆点）
+        function showL5Hint() {
+            if (currentLevel !== 5) return;
+            const nextChar = l5SegAnswer.charAt(l5SegProgress.length);
+            if (!nextChar) return;
+            const toast = document.getElementById('l5-tip-toast');
+            toast.innerText = `💡 下一个字：「${nextChar}」`;
+            toast.style.display = 'block';
+            clearTimeout(toast._t);
+            toast._t = setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
+        // ===== 段末小结页（第4、5关共用）=====
+        let segSummaryLevel = 4;
+        function showSegSummary(level, segIndex, bestSec) {
+            segSummaryLevel = level;
+            const page = document.getElementById('seg-summary');
+            const title = document.getElementById('seg-summary-title');
+            const timeEl = document.getElementById('seg-summary-time');
+            const nextBtn = document.getElementById('seg-next-btn');
+            const redoBtn = document.getElementById('seg-redo-btn');
+
+            const isLast = segIndex === segments.length - 1;
+            title.innerText = `第 ${segIndex + 1} 段 · 完成 🎉`;
+
+            if (level === 5) {
+                const m = Math.floor(bestSec / 60), s = bestSec % 60;
+                timeEl.innerHTML = `本段最快用时：<strong>${m > 0 ? m + ' 分 ' : ''}${s} 秒</strong>`;
+                redoBtn.style.display = 'block';
+            } else {
+                timeEl.innerHTML = `本段录入核对无误，继续保持！`;
+                redoBtn.style.display = 'block';
+            }
+
+            nextBtn.innerText = isLast
+                ? (level === 5 ? '🏅 完成全篇 · 查看成就' : '✅ 完成本板块')
+                : '进入下一段';
+            page.style.display = 'flex';
+        }
+
+        function segGoNext() {
+            document.getElementById('seg-summary').style.display = 'none';
+            const isLast = (segSummaryLevel === 5 ? l5SegIndex : l4SegIndex) === segments.length - 1;
+            if (segSummaryLevel === 5) {
+                if (isLast) { showAchievementCard(); return; }
+                l5SegIndex++;
+                loadL5Seg();
+            } else {
+                if (isLast) { triggerL4Done(); return; }
+                l4SegIndex++;
+                renderL4Seg();
+            }
+        }
+
+        function segRedo() {
+            document.getElementById('seg-summary').style.display = 'none';
+            if (segSummaryLevel === 5) {
+                loadL5Seg();   // 重练本段：进度清零、计时重置；最快用时已保留
+            } else {
+                l4SavedText[l4SegIndex] = "";
+                renderL4Seg();
+            }
+        }
+
+        function triggerL4Done() {
+            const modal = document.getElementById('success-page');
+            document.getElementById('success-title').innerText = "第四关完成🎉";
+            document.getElementById('success-desc').innerText = "七段语音默写全部通过，可以进入终极测评了。";
+            document.getElementById('success-next-btn').innerText = "进入终极测评";
+            modal.style.display = 'flex';
+            fireConfetti();
+        }
+
+        // ===== 成功页（第1-3关）=====
+        function triggerSuccess() {
+            const modal = document.getElementById('success-page');
+            document.getElementById('success-title').innerText = "挑战成功🎉";
+            document.getElementById('success-desc').innerText = "百尺竿头，更进一步";
+            document.getElementById('success-next-btn').innerText = "进入下一关";
+            modal.style.display = 'flex';
+            fireConfetti();
+        }
+
+        function closeSuccessPage() {
+            document.getElementById('success-page').style.display = 'none';
+            if (currentLevel < 5) goToLevel(currentLevel + 1);
+        }
+
+        // ===== 成就卡 =====
+        function showAchievementCard() {
+            const totalSec = l5BestTimes.reduce((a, b) => a + (b || 0), 0);
+            const m = Math.floor(totalSec / 60), s = totalSec % 60;
+            document.getElementById('ac-time-val').innerText = m > 0 ? `${m} 分 ${s} 秒` : `${s} 秒`;
+            const now = new Date(), pad = n => String(n).padStart(2, '0');
+            document.getElementById('ac-date').innerText = `${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())}`;
+            document.getElementById('achievement-page').style.display = 'flex';
+            fireConfettiBurst();
+        }
+
+        function openReportFromCard() {
+            document.getElementById('achievement-page').style.display = 'none';
+            showReport();
+        }
+
+        function backToAchievement() {
+            document.getElementById('summary-overlay').style.display = 'none';
+            document.getElementById('achievement-page').style.display = 'flex';
+        }
+
+        function saveAchievementCard() {
+            const el = document.getElementById('achievement-card');
+            const btn = document.getElementById('ac-save-btn');
+            if (typeof html2canvas !== 'function') { alert('图片组件未加载，请检查网络后重试'); return; }
+            const orig = btn.innerHTML;
+            btn.innerHTML = '⏳ 正在生成…'; btn.style.opacity = '0.7'; btn.disabled = true;
+            html2canvas(el, { scale: 2, backgroundColor: null }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = '石钟山记-成就卡.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerHTML = '✅ 已保存';
+                setTimeout(() => { btn.innerHTML = orig; btn.style.opacity = '1'; btn.disabled = false; }, 2000);
+            }).catch(() => { alert('生成失败，请重试'); btn.innerHTML = orig; btn.style.opacity = '1'; btn.disabled = false; });
+        }
+
+        // ===== 报告页 =====
+        function showReport() {
+            const overlay = document.getElementById('summary-overlay');
+            const evalDiv = document.getElementById('summary-eval');
+            const textContainer = document.getElementById('report-text-container');
+            overlay.style.display = 'block';
+            textContainer.innerHTML = '';
+            const totalSec = l5BestTimes.reduce((a, b) => a + (b || 0), 0);
+            const m = Math.floor(totalSec / 60), s = totalSec % 60;
+            const timeStr = (m > 0 ? m + ' 分 ' : '') + s + ' 秒';
+
+            if (l5TotalErrors === 0) {
+                evalDiv.innerHTML = `<strong>惊为天人！</strong><br>全程顺畅、一次未卡，用时 ${timeStr}。`;
+                evalDiv.style.color = "var(--primary-color)";
+            } else if (l5TotalErrors <= 12) {
+                evalDiv.innerHTML = `全篇默写达成，用时 ${timeStr}，共 ${l5TotalErrors} 次落笔未中。<br>瑕不掩瑜，基础非常扎实！`;
+                evalDiv.style.color = "var(--primary-color)";
+            } else {
+                evalDiv.innerHTML = `全篇默写达成，用时 ${timeStr}，共 ${l5TotalErrors} 次落笔未中。<br>建议对照原文复看卡顿处，再练一遍。`;
+                evalDiv.style.color = "var(--text-color)";
+            }
+            rawParas.forEach(para => {
+                const p = document.createElement('p');
+                p.className = 'report-para';
+                p.innerText = para;
+                textContainer.appendChild(p);
+            });
+        }
+
+        function downloadReport() {
+            const element = document.getElementById('report-capture-area');
+            const btn = document.getElementById('download-btn');
+            if (typeof html2canvas !== 'function') { alert('图片组件未加载，请检查网络后重试'); return; }
+            const origText = btn.innerHTML;
+            btn.innerHTML = "⏳ 正在生成长图…"; btn.style.opacity = '0.7'; btn.disabled = true;
+            html2canvas(element, { scale: 2, backgroundColor: "#fff" }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = '石钟山记-默写报告.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerHTML = "✅ 保存成功";
+                setTimeout(() => { btn.innerHTML = origText; btn.style.opacity = '1'; btn.disabled = false; }, 2000);
+            }).catch(() => { alert("生成图片失败，请重试"); btn.innerHTML = origText; btn.style.opacity = '1'; btn.disabled = false; });
+        }
+
+        // ===== 礼花 =====
+        function fireConfetti() {
+            if (typeof confetti !== 'function') return;
+            try {
+                var end = Date.now() + 2500;
+                (function frame() {
+                    confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#6a8b47', '#f4a460', '#4682b4', '#d9534f'] });
+                    confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#6a8b47', '#f4a460', '#4682b4', '#d9534f'] });
+                    if (Date.now() < end) requestAnimationFrame(frame);
+                }());
+            } catch (e) {}
+        }
+
+        // 成就时刻：三点齐炸（彩带更大、飘落更慢更久）
+        function fireConfettiBurst() {
+            if (typeof confetti !== 'function') return;
+            try {
+                const colors = ['#6a8b47', '#f4a460', '#4682b4', '#d9534f', '#9b59b6'];
+                const cfg = { particleCount: 160, spread: 120, startVelocity: 34, gravity: 0.04, decay: 0.93, ticks: 680, scalar: 2.4, colors };
+                confetti({ ...cfg, origin: { x: 0.5,  y: 0.4 } });   // 主炸
+                confetti({ ...cfg, origin: { x: 0.13, y: 0.6 } });   // 左辅炸
+                confetti({ ...cfg, origin: { x: 0.86, y: 0.9 } });   // 右辅炸
+            } catch (e) {}
+        }
+
+        initLevel(1);
+    </script>
+</body>
+</html>

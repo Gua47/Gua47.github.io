@@ -106,6 +106,22 @@
     caret-color: transparent;
     z-index: -1;
 }
+        body.l5-ios-input #ghost-input {
+            left: 8px;
+            bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            width: 44px;
+            height: 44px;
+            opacity: 0.02;
+            z-index: 95;
+            font-size: 16px;
+            line-height: 44px;
+            padding: 0;
+            outline: none;
+            pointer-events: none;
+            -webkit-user-select: text;
+            user-select: text;
+            transform: translateZ(0);
+        }
         #l5-tip-toast { display: none; position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(70,130,180,0.92); color: #fff; padding: 12px 22px; border-radius: 22px; font-size: 1.25rem; z-index: 100; white-space: nowrap; pointer-events: none; text-align: center; font-weight: bold; }
         #l5-hint-btn { display: none; position: fixed; bottom: 28px; right: 16px; z-index: 110; background: #4682b4; color: #fff; border: none; border-radius: 22px; padding: 10px 18px; font-size: 0.95rem; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.15); }
 
@@ -267,6 +283,8 @@
         // 标点过滤表：已新增单引号 ‘ ’（多层引号嵌套）
         const puncRegex = /[，。；？、〔〕“”‘’\s！!：:《》〈〉（）()]/;
         const charPool = [...new Set(fullTextStr.replace(new RegExp(puncRegex, 'g'), "").split(''))];
+        const l5IsIOS = /iP(ad|hone|od)/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const l5IsAndroid = /Android/i.test(navigator.userAgent);
 
         // 第1-3关易错字混淆表（本篇专属；精准干扰优先，不足随机补足）
         const confusionMap = {
@@ -320,6 +338,9 @@
             l4Container.style.display = 'none';
             opts.style.display = 'none';
             ghostInput.style.display = 'none';
+            ghostInput.value = '';
+            document.body.classList.toggle('l5-ios-input', level === 5 && l5IsIOS);
+            document.body.classList.toggle('l5-android-input', level === 5 && l5IsAndroid);
             document.getElementById('l5-tip-toast').style.display = 'none';
             document.getElementById('l5-hint-btn').style.display = 'none';
             document.getElementById('seg-hint').innerText = '';
@@ -537,6 +558,44 @@
         let l5BestTimes = [];           // 每段最快用时（秒）
         let l5TotalErrors = 0;
         let l5Composing = false;
+        let l5GhostBound = false;
+
+        function focusL5Ghost() {
+            if (currentLevel !== 5) return;
+            const segSummaryOpen = document.getElementById('seg-summary').style.display === 'flex';
+            const achievementOpen = document.getElementById('achievement-page').style.display === 'flex';
+            const reportOpen = document.getElementById('summary-overlay').style.display === 'block';
+            if (segSummaryOpen || achievementOpen || reportOpen) return;
+            const gi = document.getElementById('ghost-input');
+            if (!gi || gi.style.display === 'none') return;
+            try {
+                gi.focus({ preventScroll: true });
+            } catch (e) {
+                gi.focus();
+            }
+            if (document.activeElement === gi && typeof gi.setSelectionRange === 'function') {
+                const end = gi.value.length;
+                try { gi.setSelectionRange(end, end); } catch (e) {}
+            }
+        }
+
+        function syncL5GhostValue() {
+            const gi = document.getElementById('ghost-input');
+            gi.value = l5IsIOS ? '' : l5SegProgress;
+            if (typeof gi.setSelectionRange === 'function') {
+                const end = gi.value.length;
+                try { gi.setSelectionRange(end, end); } catch (e) {}
+            }
+        }
+
+        function scrollL5ActiveBlank(el) {
+            if (l5IsIOS) {
+                el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+                setTimeout(focusL5Ghost, 0);
+            } else {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
 
         function initL5() {
             l5SegIndex = 0;
@@ -571,7 +630,8 @@
             renderL5Seg(0);
             const gi = document.getElementById('ghost-input');
             gi.value = '';
-            setTimeout(() => gi.focus(), 200);
+            focusL5Ghost();
+            setTimeout(focusL5Ghost, 200);
         }
 
         function renderL5Seg(progressLen) {
@@ -581,16 +641,24 @@
                     b.className = 'blank filled'; b.style.color = ''; b.innerText = b.dataset.ans;
                 } else {
                     b.className = 'blank'; b.style.color = ''; b.innerText = b.dataset.ans;
-                    if (i === progressLen) { b.classList.add('active'); b.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                    if (i === progressLen) { b.classList.add('active'); scrollL5ActiveBlank(b); }
                 }
             });
         }
 
         function bindGhostInput() {
     const gi = document.getElementById('ghost-input');
+    const gameArea = document.getElementById('game-area');
 
-    document.getElementById('game-area').onclick = () => {
-        if (currentLevel === 5) gi.focus();
+    if (l5GhostBound) return;
+    l5GhostBound = true;
+
+    gameArea.onclick = () => {
+        focusL5Ghost();
+    };
+
+    gameArea.ontouchend = () => {
+        focusL5Ghost();
     };
 
     gi.oncompositionstart = () => {
@@ -598,7 +666,9 @@
     };
 
     gi.oncompositionupdate = (e) => {
-        validateL5(e.data || "", { countError: false });
+        if (!l5IsIOS) {
+            validateL5(e.data || "", { countError: false });
+        }
     };
 
     gi.oncompositionend = (e) => {
@@ -607,7 +677,18 @@
     };
 
     gi.oninput = (e) => {
+        if (l5IsIOS && l5Composing) return;
         validateL5(e.data || "");
+    };
+
+    gi.onblur = () => {
+        if (!l5IsIOS || currentLevel !== 5) return;
+        const segSummaryOpen = document.getElementById('seg-summary').style.display === 'flex';
+        const achievementOpen = document.getElementById('achievement-page').style.display === 'flex';
+        const reportOpen = document.getElementById('summary-overlay').style.display === 'block';
+        if (!segSummaryOpen && !achievementOpen && !reportOpen) {
+            setTimeout(focusL5Ghost, 80);
+        }
     };
 }
       function validateL5(extraText = "", options = {}) {
@@ -628,7 +709,7 @@
     }
 
     if (candidates.length === 0) {
-        gi.value = l5SegProgress;
+        syncL5GhostValue();
         return;
     }
 
@@ -683,7 +764,8 @@
 
         setTimeout(() => {
             if (currentLevel === 5) {
-                gi.value = l5SegProgress;
+                syncL5GhostValue();
+                focusL5Ghost();
             }
         }, 0);
 
@@ -710,7 +792,8 @@
     if (isDuplicateSubmit) {
         setTimeout(() => {
             if (currentLevel === 5) {
-                gi.value = l5SegProgress;
+                syncL5GhostValue();
+                focusL5Ghost();
             }
         }, 0);
         return;
@@ -722,7 +805,8 @@
 
     setTimeout(() => {
         if (currentLevel === 5) {
-            gi.value = l5SegProgress;
+            syncL5GhostValue();
+            focusL5Ghost();
         }
     }, 0);
 }  

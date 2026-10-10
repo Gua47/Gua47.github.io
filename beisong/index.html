@@ -10,13 +10,14 @@
             --paper: #fffdf7;
             --text: #2f2f2a;
             --muted: #747067;
-            --primary: #6a8b47;
+            --title: #8B3342;
+            --pressed: #F8ECEE;
             --line: #d6d0bf;
-            --blue: #4682b4;
-            --red: #b85c50;
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             margin: 0;
@@ -27,9 +28,8 @@
         }
 
         .page {
-            width: min(920px, 100%);
-            margin: 0 auto;
-            padding: 28px 18px 48px;
+            width: 100%;
+            padding: 22px 14px 40px;
         }
 
         header {
@@ -39,16 +39,9 @@
         }
 
         h1 {
-            margin: 0 0 10px;
-            font-size: 2rem;
-            letter-spacing: 2px;
-        }
-
-        .subtitle {
             margin: 0;
-            color: var(--muted);
-            font-size: 0.98rem;
-            line-height: 1.7;
+            font-size: 1.65rem;
+            letter-spacing: 2px;
         }
 
         .section-title {
@@ -68,101 +61,80 @@
         .count {
             color: var(--muted);
             font-size: 0.9rem;
+            white-space: nowrap;
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
+            gap: 12px;
         }
 
         .card {
-            display: block;
-            min-height: 150px;
-            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+            min-height: 116px;
+            padding: 12px;
             background: var(--paper);
             border: 1px solid var(--line);
             border-radius: 8px;
             text-decoration: none;
             color: inherit;
             box-shadow: 0 4px 14px rgba(70, 60, 35, 0.05);
-            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+            -webkit-tap-highlight-color: transparent;
+            transition:
+                transform 0.18s ease,
+                background-color 0.18s ease,
+                border-color 0.18s ease;
         }
 
         .card:active {
             transform: scale(0.99);
+            background: var(--pressed);
+            border-color: var(--title);
         }
 
-        @media (hover: hover) {
-            .card:hover {
-                transform: translateY(-2px);
-                border-color: var(--primary);
-                box-shadow: 0 8px 20px rgba(70, 60, 35, 0.08);
-            }
-        }
-
-        .tag {
-            display: inline-flex;
-            align-items: center;
-            height: 24px;
-            padding: 0 9px;
-            border-radius: 999px;
-            background: rgba(106, 139, 71, 0.12);
-            color: var(--primary);
-            font-size: 0.78rem;
-            margin-bottom: 14px;
+        .card:focus-visible {
+            outline: 2px solid var(--title);
+            outline-offset: 3px;
         }
 
         .card h3 {
             margin: 0 0 8px;
-            font-size: 1.35rem;
-            letter-spacing: 1px;
+            min-height: 3em;
+            color: var(--title);
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.5;
+            text-align: left;
+            overflow-wrap: anywhere;
         }
 
         .meta {
-            margin: 0 0 16px;
+            margin: 0;
             color: var(--muted);
-            font-size: 0.92rem;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.5;
+            text-align: left;
         }
 
-        .status {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            color: var(--muted);
-            font-size: 0.9rem;
+        @media (max-width: 359px) {
+            .card h3 {
+                font-size: 16px;
+            }
         }
 
-        .enter {
-            color: var(--blue);
-            white-space: nowrap;
-        }
+        @media (prefers-reduced-motion: reduce) {
+            .card {
+                transition: none;
+            }
 
-        .soon {
-            pointer-events: none;
-            opacity: 0.62;
-        }
-
-        .soon .tag {
-            background: rgba(184, 92, 80, 0.12);
-            color: var(--red);
-        }
-
-        footer {
-            margin-top: 30px;
-            padding-top: 18px;
-            border-top: 1px solid var(--line);
-            color: var(--muted);
-            font-size: 0.86rem;
-            line-height: 1.7;
-        }
-
-        @media (max-width: 640px) {
-            .page { padding: 22px 14px 40px; }
-            h1 { font-size: 1.65rem; }
-            .grid { grid-template-columns: 1fr; }
-            .card { min-height: 132px; }
+            .card:active {
+                transform: none;
+            }
         }
     </style>
 </head>
@@ -170,42 +142,46 @@
     <main class="page">
         <header>
             <h1>高中古文背诵闯关</h1>
-           
         </header>
 
-        <section>
+        <section aria-labelledby="section-title">
             <div class="section-title">
-                <h2>选择性必修下</h2>
-                <span class="count">共5篇</span>
+                <h2 id="section-title">选择性必修下</h2>
+                <span class="count">共6篇</span>
             </div>
 
             <div class="grid">
                 <a class="card" href="./chenqing.html">
-                    <h3>陈情表 <span class="meta">李密 〔西晋〕</span></h3>  
+                    <h3>陈情表</h3>
+                    <p class="meta">李密〔西晋〕</p>
                 </a>
 
                 <a class="card" href="./xiangji.html">
-                    <h3>项脊轩志 <span class="meta">归有光 〔明〕</span></h3>   
+                    <h3>项脊轩志</h3>
+                    <p class="meta">归有光〔明〕</p>
                 </a>
 
                 <a class="card" href="./lanting.html">
-                    <h3>兰亭集序 <span class="meta">王羲之 〔东晋〕</span></h3> 
+                    <h3>兰亭集序</h3>
+                    <p class="meta">王羲之〔东晋〕</p>
                 </a>
 
-                 <a class="card" href="./guiqu.html">
-                    <h3>归去来兮辞 <span class="meta">陶渊明 〔东晋〕</span></h3>     
+                <a class="card" href="./guiqu.html">
+                    <h3>归去来兮辞</h3>
+                    <p class="meta">陶渊明〔东晋〕</p>
                 </a>
-                
+
                 <a class="card" href="./zhongshu.html">
-                    <h3>种树郭橐驼传 <span class="meta">柳宗元 〔唐〕</span></h3>     
-                </a>            
+                    <h3>种树郭橐驼传</h3>
+                    <p class="meta">柳宗元〔唐〕</p>
+                </a>
 
-                 <a class="card" href="./shizhong.html">
-                    <h3>石钟山记<span class="meta">苏轼 〔北宋〕</span></h3>   
+                <a class="card" href="./shizhong.html">
+                    <h3>石钟山记</h3>
+                    <p class="meta">苏轼〔北宋〕</p>
                 </a>
             </div>
         </section>
-
     </main>
 </body>
 </html>

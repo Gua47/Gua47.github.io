@@ -773,10 +773,10 @@
     candidates.forEach(rawVal => {
         let candidateProgress = null;
 
-        if (l5SegAnswer.startsWith(rawVal)) {
-            if (rawVal.length >= l5SegProgress.length) {
-                candidateProgress = rawVal;
-            }
+        // 只有长度覆盖已有进度时，才按整段累计输入处理。
+        // iOS逐字提交可能再次输入段首字，仍须核对当前位置。
+        if (rawVal.length >= l5SegProgress.length && l5SegAnswer.startsWith(rawVal)) {
+            candidateProgress = rawVal;
         } else {
             const remainder = l5SegAnswer.substring(l5SegProgress.length);
 

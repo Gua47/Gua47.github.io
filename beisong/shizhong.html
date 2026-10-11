@@ -705,12 +705,12 @@
 
     candidates.forEach(rawVal => {
         let candidateProgress = null;
-
-        if (l5SegAnswer.startsWith(rawVal)) {
-            if (rawVal.length >= l5SegProgress.length) {
-                candidateProgress = rawVal;
-            }
-        } else {
+if (
+    rawVal.length >= l5SegProgress.length &&
+    l5SegAnswer.startsWith(rawVal)
+) {
+    candidateProgress = rawVal;
+} else {
             const remainder = l5SegAnswer.substring(l5SegProgress.length);
 
             if (remainder.startsWith(rawVal)) {
